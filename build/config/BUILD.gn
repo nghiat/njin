@@ -153,7 +153,7 @@ config("optimize") {
 }
 
 config("default_optimization") {
-  if (is_debug) {
+  if (!is_optimized) {
     configs = [ ":no_optimize" ]
   } else {
     configs = [ ":optimize" ]
@@ -194,18 +194,11 @@ config("default_symbols") {
 }
 # Debug/release ----------------------------------------------------------------
 
-config("debug") {
-}
-
 config("release") {
-  defines = [ "NDEBUG" ]
+  defines = [ "NDEBUG", "NJ_RELEASE_" ]
 }
 
 # Default libraries ------------------------------------------------------------
-
-# This config defines the default libraries applied to all targets.
-config("default_libs") {
-}
 
 config("default_include_dirs") {
   include_dirs = [
