@@ -1,0 +1,10 @@
+*.c text eol=lf
+*.cpp text eol=lf
+*.gn text eol=lf
+*.gni text eol=lf
+*.h text eol=lf
+*.md text eol=lf
+*.py text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+LICENSE.* text eol=lf

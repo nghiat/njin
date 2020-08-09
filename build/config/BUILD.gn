@@ -1,0 +1,215 @@
+# Copyright (c) 2013 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//build/toolchain/toolchain.gni")
+import("//build/toolchain/clang.gni")
+import("//build/toolchain/compiler_version.gni")
+
+declare_args() {
+  # Optional string containing extra assembler arguments.
+  # Like 'asmflags' this value is passed to all tools that take
+  # an .asm or .S input.
+  extra_asmflags = ""
+
+  # Optional string containing extra compiler arguments.
+  # Like 'cflags' this value is passed to the C, C++, Objective C, and
+  # Objective C++ compilers.
+  extra_cflags = ""
+
+  # Optional string containing extra compiler arguments.
+  # Like 'cflags_c' this value is only passed to the C compiler.
+  extra_cflags_c = ""
+
+  # Optional string containing extra compiler arguments.
+  # Like 'cflags_cc' this value is only passed to the C++ compiler.
+  extra_cflags_cc = ""
+
+  # Optional string containing extra linker arguments.
+  extra_ldflags = ""
+}
+
+# compiler ---------------------------------------------------------------------
+#
+# Base compiler configuration.
+#
+# See also "runtime_library" below for related stuff and a discussion about
+# where stuff should go. Put warning related stuff in the "warnings" config.
+
+config("compiler") {
+  asmflags = []
+  cflags = []
+  cflags_c = []
+  cflags_cc = []
+  ldflags = []
+  defines = []
+  configs = []
+
+  # System-specific flags. If your compiler flags apply to one of the
+  # categories here, add it to the associated file to keep this shared config
+  # smaller.
+  if (is_win) {
+    configs += [ "//build/config/win:compiler" ]
+  }
+
+  # Applies to all Posix systems.
+  if (is_posix) {
+    configs += [ "//build/config/posix:compiler" ]
+  }
+
+  # Clang-specific compiler flags setup.
+  # ------------------------------------
+  cflags += [
+    "-fcolor-diagnostics",
+    "-Wshadow",
+    "-Wunused",
+    "-fdiagnostics-absolute-paths",
+  ]
+}
+
+config("extra_flags") {
+  if (extra_asmflags != "") {
+    asmflags = [ extra_asmflags ]
+  }
+  if (extra_cflags != "") {
+    cflags = [ extra_cflags ]
+  }
+  if (extra_cflags_c != "") {
+    cflags_c = [ extra_cflags_c ]
+  }
+  if (extra_cflags_cc != "") {
+    cflags_cc = [ extra_cflags_cc ]
+  }
+  if (extra_ldflags != "") {
+    ldflags = [ extra_ldflags ]
+  }
+}
+
+config("pthread") {
+  if (is_linux) {
+    cflags = [ "-pthread" ]
+    ldflags = [ "-pthread" ]
+  }
+}
+
+config("runtime_library") {
+  defines = []
+  configs = []
+
+  # System-specific flags. If your compiler flags apply to one of the
+  # categories here, add it to the associated file to keep this shared config
+  # smaller.
+  if (is_win) {
+    configs += [ "//build/config/win:runtime_library" ]
+  } else if (is_posix) {
+    configs += [ "//build/config/posix:runtime_library" ]
+  }
+}
+
+# C++ standard to use ---------------------------------------------------------
+
+config("c++14") {
+  if (!is_win) {
+    cflags_cc = [ "-std=c++14" ]
+  } else if (msc_full_ver >= 190024210) {
+    cflags_cc = [ "/std:c++14" ]
+  }
+}
+
+config("no_rtti") {
+  if (is_win) {
+    cflags_cc = [ "/GR-" ]
+  } else {
+    cflags_cc = [ "-fno-rtti" ]
+  }
+}
+
+config("no_exceptions") {
+  if (is_win) {
+    defines = [ "_HAS_EXCEPTIONS=0" ]
+  } else {
+    cflags_cc = [ "-fno-exceptions" ]
+  }
+}
+
+config("no_optimize") {
+  if (is_win) {
+    cflags = [
+      "/Od",  # Disable optimization.
+      "/Ob0",  # Disable all inlining (on by default).
+    ]
+  } else {
+    cflags = [ "-O0" ]
+    ldflags = []
+  }
+}
+
+config("optimize") {
+  if (is_win) {
+    cflags = [ "/O2" ]
+  } else {
+    cflags = [ "-O3" ]
+  }
+}
+
+config("default_optimization") {
+  if (is_debug) {
+    configs = [ ":no_optimize" ]
+  } else {
+    configs = [ ":optimize" ]
+  }
+}
+
+# Symbols ----------------------------------------------------------------------
+
+# The BUILDCONFIG file sets the "default_symbols" config on targets by
+# default. It will be equivalent to one the three specific symbol levels.
+#
+# You can override the symbol level on a per-target basis by removing the
+# default config and then adding the named one you want:
+#
+#   configs -= [ "//build/config:default_symbols" ]
+#   configs += [ "//build/config:symbols" ]
+
+# Full symbols.
+config("symbols") {
+  if (is_win) {
+    cflags = [
+      "/Zi",  # Produce PDB file, no edit and continue.
+      "-fno-standalone-debug",
+    ]
+
+    ldflags = [ "/DEBUG" ]
+  } else {
+    cflags = [ "-g2" ]
+  }
+}
+
+config("default_symbols") {
+  if (symbol_level == 2) {
+    configs = [ ":symbols" ]
+  } else {
+    assert(false)
+  }
+}
+# Debug/release ----------------------------------------------------------------
+
+config("debug") {
+}
+
+config("release") {
+  defines = [ "NDEBUG" ]
+}
+
+# Default libraries ------------------------------------------------------------
+
+# This config defines the default libraries applied to all targets.
+config("default_libs") {
+}
+
+config("default_include_dirs") {
+  include_dirs = [
+    "//",
+    "$root_gen_dir",
+  ]
+}

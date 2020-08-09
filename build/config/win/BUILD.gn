@@ -1,0 +1,117 @@
+# Copyright (c) 2013 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//build/toolchain/win/settings.gni")
+import("//build/toolchain/toolchain.gni")
+
+assert(is_win)
+
+# This is included by reference in the //build/config/compiler config that
+# is applied to all targets. It is here to separate out the logic that is
+# Windows-only.
+config("compiler") {
+  cflags = []
+  if (current_cpu == "x86") {
+    cflags += [ "-m32" ]
+  } else {
+    cflags += [ "-m64" ]
+  }
+}
+
+# This is included by reference in the //build/config/compiler:runtime_library
+# config that is applied to all targets. It is here to separate out the logic
+# that is Windows-only. Please see that target for advice on what should go in
+# :runtime_library vs. :compiler.
+config("runtime_library") {
+  cflags = []
+
+  # Defines that set up the CRT.
+  defines = [ "_CRT_SECURE_NO_DEPRECATE" ]
+
+  # Defines that set up the Windows SDK.
+  defines += [
+    "WIN32",
+    "_SECURE_ATL",
+  ]
+}
+
+# Sets the default Windows build version. This is separated because some
+# targets need to manually override it for their compiles.
+config("winver") {
+  defines = [
+    "NTDDI_VERSION=0x0A000000",
+    "_WIN32_WINNT=0x0A00",
+    "WINVER=0x0A00",
+  ]
+}
+
+# Linker flags for Windows SDK setup, this is applied only to EXEs and DLLs.
+config("sdk_link") {
+  if (current_cpu == "x64") {
+    lib_dirs = [
+      "$windows_sdk_path\Lib\winv6.3\um\x64",
+      "$visual_studio_path\VC\lib\amd64",
+      "$visual_studio_path\VC\atlmfc\lib\amd64",
+    ]
+  } else {
+    lib_dirs = [
+      "$windows_sdk_path\Lib\winv6.3\um\x86",
+      "$visual_studio_path\VC\lib",
+      "$visual_studio_path\VC\atlmfc\lib",
+    ]
+  }
+}
+
+# CRT --------------------------------------------------------------------------
+
+# Configures how the runtime library (CRT) is going to be used.
+# See https://msdn.microsoft.com/en-us/library/2kzt1wy3.aspx for a reference of
+# what each value does.
+config("default_crt") {
+  configs = [ ":static_crt" ]
+}
+
+config("static_crt") {
+  if (is_debug) {
+    cflags = [ "/MTd" ]
+  } else {
+    cflags = [ "/MT" ]
+  }
+}
+
+# This is appended to the subsystem to specify a minimum version.
+if (current_cpu == "x64") {
+  # The number after the comma is the minimum required OS version.
+  # 5.02 = Windows Server 2003.
+  subsystem_version_suffix = ",5.02"
+} else {
+  # 5.01 = Windows XP.
+  subsystem_version_suffix = ",5.01"
+}
+
+config("console") {
+  ldflags = [ "/SUBSYSTEM:CONSOLE$subsystem_version_suffix" ]
+}
+config("windowed") {
+  ldflags = [ "/SUBSYSTEM:WINDOWS$subsystem_version_suffix" ]
+}
+
+config("unicode") {
+  defines = [
+    "_UNICODE",
+    "UNICODE",
+  ]
+}
+
+config("lean_and_mean") {
+  defines = [ "WIN32_LEAN_AND_MEAN" ]
+}
+
+config("nominmax") {
+  defines = [ "NOMINMAX" ]
+}
+
+config("incremental_linking") {
+  ldflags = [ "/INCREMENTAL" ]
+}

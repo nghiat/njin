@@ -1,0 +1,32 @@
+import("//build/toolchain/posix/clang_toolchain.gni")
+import("//build/toolchain/posix/settings.gni")
+
+clang_toolchain("clang_x86") {
+  cc = clang_cc
+  cxx = clang_cxx
+  ld = cxx
+
+  readelf = readelf
+  ar = ar
+  nm = nm
+
+  toolchain_args = {
+    current_cpu = "x86"
+    current_os = target_os
+  }
+}
+
+clang_toolchain("clang_x64") {
+  cc = clang_cc
+  cxx = clang_cxx
+  ld = cxx
+
+  readelf = readelf
+  ar = ar
+  nm = nm
+
+  toolchain_args = {
+    current_cpu = "x64"
+    current_os = target_os
+  }
+}

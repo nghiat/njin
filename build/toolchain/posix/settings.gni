@@ -1,0 +1,16 @@
+import("//build/toolchain/clang.gni")
+
+declare_args() {
+  clang_cc = "clang"
+
+  clang_cxx = "clang++"
+
+  # Path of the 'readelf' utility.
+  readelf = "readelf"
+
+  # Path of the 'ar' utility.
+  ar = "ar"
+
+  # Path of the 'nm' utility.
+  nm = "nm"
+}

@@ -1,0 +1,73 @@
+import("//build/toolchain/clang.gni")
+
+declare_args() {
+  # Version of Visual Studio pointed to by the visual_studio_path.
+  # Use "2013" for Visual Studio 2013.
+  visual_studio_version = "2017"
+
+  # Path to Visual Studio.
+  visual_studio_path = ""
+
+  # Windows SDK version to use.
+  # Can either be a full Windows 10 SDK number (e.g. 10.0.10240.0),
+  # "8.1" for the Windows 8.1 SDK or "default" to use the VS default version.
+  windows_sdk_version = "default"
+
+  # Full path to the Windows SDK, not including a backslash at the end.
+  # This value is the default location, override if you have a different
+  # installation location.
+  windows_sdk_path = ""
+
+  # Microsoft compiler version number clang-cl will report in _MSC_VER
+  # (Defaults to the default version associated with the chosen VS version.)
+  clang_msc_ver = 0
+}
+
+if (visual_studio_path == "") {
+  visual_studio_path = exec_script("toolchain.py",
+                                   [
+                                     "get_vs_dir",
+                                     visual_studio_version,
+                                   ],
+                                   "trim string")
+}
+
+sys_include_prefix = "-imsvc"
+_clang_base_path_arg = clang_base_path
+_clang_msc_ver = "" + clang_msc_ver
+
+if (host_os == "win") {
+  clang_cl = "clang-cl.exe"
+} else {
+  clang_cl = "clang-cl"
+}
+
+toolchain_data = exec_script("toolchain.py",
+                             [
+                               "setup_toolchain",
+                               visual_studio_version,
+                               visual_studio_path,
+                               sys_include_prefix,
+                               windows_sdk_version,
+                               _clang_base_path_arg,
+                               _clang_msc_ver
+                             ],
+                             "scope")
+
+if (windows_sdk_path == "") {
+  windows_sdk_path = toolchain_data.windows_sdk_path
+}
+
+# Value of the _MSC_VER variable.
+# see: https://msdn.microsoft.com/en-us/library/b0084kay.aspx
+msc_ver = toolchain_data.msc_ver
+
+# Value of the _MSC_FULL_VER variable.
+# see: https://msdn.microsoft.com/en-us/library/b0084kay.aspx
+msc_full_ver = toolchain_data.msc_full_ver
+
+win_clang_version = toolchain_data.clang_version
+
+# These are hardcoded in toolchain.py
+x86_environment_path = "environment.x86"
+x64_environment_path = "environment.x64"
