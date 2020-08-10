@@ -6,7 +6,54 @@
 
 static_library("core") {
   sources = [
+    "allocator.h",
+    "allocator_internal.cpp",
+    "allocator_internal.h",
+    "bit_stream.cpp",
+    "bit_stream.h",
     "build.h",
+    "core_allocators.cpp",
+    "core_allocators.h",
+    "core_init.cpp",
+    "core_init.h",
+    "debug.h",
+    "file.cpp",
+    "file.h",
+    "free_list_allocator.cpp",
+    "free_list_allocator.h",
+    "linear_allocator.h",
+    "linear_allocator.inl",
+    "log.cpp",
+    "log.h",
+    "mono_time.h",
+    "njtype.h",
     "os.h",
+    "os_string.h",
+    "path_utils.cpp",
+    "path_utils.h",
+    "thread.h",
   ]
+
+  if (is_win) {
+    sources += [
+      "debug_win.cpp",
+      "file_win.cpp",
+      "mono_time_win.cpp",
+      "os_string_win.cpp",
+      "path_utils_win.cpp",
+      "thread_win.cpp",
+      "windows_lite.h",
+    ]
+  }
+
+  if (is_linux) {
+    sources += [
+      "debug_linux.cpp",
+      "file_linux.cpp",
+      "mono_time_linux.cpp",
+      "os_string_linux.cpp",
+      "path_utils_linux.cpp",
+      "thread_unix.cpp",
+    ]
+  }
 }

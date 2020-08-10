@@ -73,7 +73,7 @@ config("default_crt") {
 }
 
 config("static_crt") {
-  if (is_debug) {
+  if (!is_optimized) {
     cflags = [ "/MTd" ]
   } else {
     cflags = [ "/MT" ]

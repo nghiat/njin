@@ -117,7 +117,7 @@ if (current_os == "") {
 
 declare_args() {
   is_optimized = false
-  is_release = false
+  is_dev = true
 
   # This should not normally be set as a build argument.  It's here so that
   # every toolchain can pass through the "global" value via toolchain_args().
@@ -215,7 +215,9 @@ if (is_win) {
 }
 
 # Debug/release-related defines.
-if (is_release) {
+if (is_dev) {
+  default_compiler_configs += [ "//build/config:dev" ]
+} else {
   default_compiler_configs += [ "//build/config:release" ]
 }
 

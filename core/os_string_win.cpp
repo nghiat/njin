@@ -4,9 +4,18 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2020             //
 //----------------------------------------------------------------------------//
 
-#ifndef NJ_CORE_BUILD_H
-#define NJ_CORE_BUILD_H
+#include "core/os_string.h"
 
-#define NJ_IS_DEV() NJ_DEV_
+#include <wchar.h>
 
-#endif // NJ_CORE_BUILD_H
+const wchar_t* nj_str_find_substr(const wchar_t* str, const wchar_t* substr) {
+  return wcsstr(str, substr);
+}
+
+size_t nj_str_get_len(const wchar_t* str) {
+  return wcslen(str);
+}
+
+bool nj_str_compare(const wchar_t* s1, const wchar_t* s2) {
+  return !wcscmp(s1, s2);
+}

@@ -192,10 +192,14 @@ config("default_symbols") {
     assert(false)
   }
 }
-# Debug/release ----------------------------------------------------------------
+# Dev/release ----------------------------------------------------------------
+
+config("dev") {
+  defines = [ "NJ_DEV_" ]
+}
 
 config("release") {
-  defines = [ "NDEBUG", "NJ_RELEASE_" ]
+  defines = [ "NDEBUG" ]
 }
 
 # Default libraries ------------------------------------------------------------

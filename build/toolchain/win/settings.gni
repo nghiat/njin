@@ -3,7 +3,7 @@ import("//build/toolchain/clang.gni")
 declare_args() {
   # Version of Visual Studio pointed to by the visual_studio_path.
   # Use "2013" for Visual Studio 2013.
-  visual_studio_version = "2017"
+  visual_studio_version = "2019"
 
   # Path to Visual Studio.
   visual_studio_path = ""
