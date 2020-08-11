@@ -17,10 +17,17 @@ static_library("core") {
     "core_init.cpp",
     "core_init.h",
     "debug.h",
+    "dynamic_array.h",
+    "dynamic_array.inl",
+    "dynamic_lib.h",
     "file.cpp",
     "file.h",
+    "file_utils.cpp",
+    "file_utils.h",
     "free_list_allocator.cpp",
     "free_list_allocator.h",
+    "hash_table.cpp",
+    "hash_table.h",
     "linear_allocator.h",
     "linear_allocator.inl",
     "log.cpp",
@@ -37,6 +44,7 @@ static_library("core") {
   if (is_win) {
     sources += [
       "debug_win.cpp",
+      "dynamic_lib_win.cpp",
       "file_win.cpp",
       "mono_time_win.cpp",
       "os_string_win.cpp",
@@ -49,6 +57,7 @@ static_library("core") {
   if (is_linux) {
     sources += [
       "debug_linux.cpp",
+      "dynamic_lib_linux.cpp",
       "file_linux.cpp",
       "mono_time_linux.cpp",
       "os_string_linux.cpp",

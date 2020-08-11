@@ -19,10 +19,10 @@ struct freeblock_t;
 /// freeation, it creates a new blocks and merges with nearby blocks if
 /// they are contiguous.
 struct nj_free_list_allocator_t : public nj_allocator_t {
-  bool init(const char* name, njsz size);
+  bool init(const char* name, njsp size);
   void destroy() override;
-  void* aligned_alloc(nju32 size, nju32 alignment) override;
-  void* realloc(void* p, nju32 size) override;
+  void* aligned_alloc(njsp size, njsp alignment) override;
+  void* realloc(void* p, njsp size) override;
   void free(void* p) override;
 
   nju8* start;

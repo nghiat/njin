@@ -15,12 +15,12 @@
 #define NJ_LINEAR_ALLOCATOR_DEFAULT_PAGE_SIZE 1024 * 1024
 
 struct la_page_t {
-  njsz size;
+  njsp size;
   la_page_t* prev;
 };
 
 template <njsz INITIAL_SIZE>
-static njsz get_current_page_remaning_size(const nj_linear_allocator_t<INITIAL_SIZE>* la) {
+static njsp get_current_page_remaning_size(const nj_linear_allocator_t<INITIAL_SIZE>* la) {
   return la->current_page->size - (la->top - (nju8*)(la->current_page));
 }
 
@@ -48,14 +48,14 @@ void nj_linear_allocator_t<INITIAL_SIZE>::destroy() {
 }
 
 template <njsz INITIAL_SIZE>
-void* nj_linear_allocator_t<INITIAL_SIZE>::aligned_alloc(nju32 size, nju32 alignment) {
+void* nj_linear_allocator_t<INITIAL_SIZE>::aligned_alloc(njsp size, njsp alignment) {
   NJ_CHECKF_RETURN_VAL(check_aligned_alloc(size, alignment), NULL, "Alignment is not power of 2");
 
   nju8* p = top + sizeof(allocation_header_t);
   p = align_forward(p, alignment);
-  njsz real_size = (p - top) + size;
+  njsp real_size = (p - top) + size;
   if (get_current_page_remaning_size(this) < real_size) {
-    njsz new_page_size = sizeof(la_page_t) + sizeof(allocation_header_t) + size + alignment;
+    njsp new_page_size = sizeof(la_page_t) + sizeof(allocation_header_t) + size + alignment;
     if (new_page_size < default_page_size) new_page_size = default_page_size;
     la_page_t* new_page = (la_page_t*)malloc(new_page_size);
     NJ_CHECKF_RETURN_VAL(new_page, NULL, "Out of memory for new page for linear allocator \"%s\"", name);
@@ -81,11 +81,11 @@ void* nj_linear_allocator_t<INITIAL_SIZE>::aligned_alloc(nju32 size, nju32 align
 }
 
 template <njsz INITIAL_SIZE>
-void* nj_linear_allocator_t<INITIAL_SIZE>::realloc(void* p, nju32 size) {
+void* nj_linear_allocator_t<INITIAL_SIZE>::realloc(void* p, njsp size) {
   NJ_CHECKF_RETURN_VAL(check_p_in_dev(p) && size, NULL, "Invalid pointer to realloc");
 
   allocation_header_t* header = get_allocation_header(p);
-  njsz old_size = header->size;
+  njsp old_size = header->size;
   // Not at top
   if ((nju8*)p + header->size != top) {
     void* new_p = aligned_alloc(size, header->alignment);

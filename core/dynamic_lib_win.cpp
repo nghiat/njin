@@ -4,27 +4,17 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2020             //
 //----------------------------------------------------------------------------//
 
-#ifndef NJ_CORE_NJTYPE_H
-#define NJ_CORE_NJTYPE_H
+#include "core/dynamic_lib.h"
 
-#include <stdint.h>
+#include <Windows.h>
 
-typedef uint8_t nju8;
-typedef uint16_t nju16;
-typedef uint32_t nju32;
-typedef uint64_t nju64;
+bool nj_dl_open(nj_dynamic_lib_t* dl, const char* name) {
+  *dl = (void*)LoadLibraryA(name);
+  return *dl;
+}
 
-typedef int8_t njs8;
-typedef int16_t njs16;
-typedef int32_t njs32;
-typedef int64_t njs64;
+void nj_dl_close(nj_dynamic_lib_t* dl) { FreeLibrary((HMODULE)(*dl)); }
 
-typedef uintptr_t njup;
-typedef intptr_t njsp;
-
-typedef float njf32;
-typedef double njf64;
-
-typedef size_t njsz;
-
-#endif // NJ_CORE_NJTYPE_H
+void* nj_dl_get_proc(nj_dynamic_lib_t* dl, const char* name) {
+  return (void*)GetProcAddress((HMODULE)(*dl), name);
+}

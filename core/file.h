@@ -48,14 +48,14 @@ void nj_file_close(nj_file_t* file);
 void nj_file_delete(nj_file_t* file);
 void nj_file_delete_path(const nj_os_char* path);
 
-bool nj_file_read(nj_file_t* file, void* buffer, njsz size, njsz* bytes_read);
-bool nj_file_read_line(nj_file_t* file, char* buffer, njsz size);
-void nj_file_write(nj_file_t* file, const void* buffer, njsz size);
-void nj_file_seek(nj_file_t* file, enum nj_file_from from, njsz distance);
-njs64 nj_file_get_pos(const nj_file_t* file);
+bool nj_file_read(nj_file_t* file, void* buffer, njsp size, njsp* bytes_read);
+bool nj_file_read_line(nj_file_t* file, char* buffer, njsp size);
+void nj_file_write(nj_file_t* file, const void* buffer, njsp size);
+void nj_file_seek(nj_file_t* file, enum nj_file_from from, njsp distance);
+njsp nj_file_get_pos(const nj_file_t* file);
 
 bool nj_file_is_valid(const nj_file_t* file);
 
-njs64 nj_file_get_size(const nj_file_t* file);
+njsp nj_file_get_size(const nj_file_t* file);
 
 #endif // NJ_CORE_FILE_H

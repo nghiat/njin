@@ -8,9 +8,9 @@
 
 #include <string.h>
 
-bool nj_file_read_line(nj_file_t* file, char* buffer, njsz size) {
-  njsz curr_pos = nj_file_get_pos(file);
-  njsz read;
+bool nj_file_read_line(nj_file_t* file, char* buffer, njsp size) {
+  njsp curr_pos = nj_file_get_pos(file);
+  njsp read;
   if (!nj_file_read(file, buffer, size - 1, &read)) {
     buffer[read] = '\0';
     return false;
@@ -20,7 +20,7 @@ bool nj_file_read_line(nj_file_t* file, char* buffer, njsz size) {
     buffer[read] = '\0';
     return false;
   }
-  njsz delta = eol - buffer;
+  njsp delta = eol - buffer;
   buffer[delta] = '\0';
   nj_file_seek(file, NJ_FILE_FROM_BEGIN, curr_pos + delta + 1);
   return true;

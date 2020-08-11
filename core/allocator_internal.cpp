@@ -12,13 +12,13 @@ allocation_header_t* get_allocation_header(void* p) {
   return (allocation_header_t*)p - 1;
 }
 
-nju8* align_forward(nju8* p, nju32 alignment) {
+nju8* align_forward(nju8* p, njsp alignment) {
   if (alignment == 1)
     return p;
   return (nju8*)(((size_t)p + alignment - 1) & ~(size_t)(alignment - 1));
 }
 
-bool check_aligned_alloc(nju32 size, nju32 alignment) {
+bool check_aligned_alloc(njsp size, njsp alignment) {
   NJ_CHECKF_RETURN_VAL(size && alignment, false, "Invalid size or alignment");
 
   // alignment has to be power of two.

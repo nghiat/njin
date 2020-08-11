@@ -55,7 +55,7 @@ void nj_file_delete_path(const wchar_t* path) {
   DeleteFile(path);
 }
 
-bool nj_file_read(nj_file_t* file, void* buffer, njsz size, njsz* bytes_read) {
+bool nj_file_read(nj_file_t* file, void* buffer, njsp size, njsp* bytes_read) {
   NJ_CHECKF_RETURN_VAL(nj_file_is_valid(file), false, "Invalid file");
   DWORD read = 0;
   ReadFile(file->handle, buffer, size, &read, NULL);
@@ -64,13 +64,13 @@ bool nj_file_read(nj_file_t* file, void* buffer, njsz size, njsz* bytes_read) {
   return read;
 }
 
-void nj_file_write(nj_file_t* file, const void* buffer, njsz size) {
+void nj_file_write(nj_file_t* file, const void* buffer, njsp size) {
   NJ_CHECKF_RETURN(nj_file_is_valid(file), "Invalid file");
   DWORD written_bytes = 0;
   WriteFile(file->handle, buffer, size, &written_bytes, NULL);
 }
 
-void nj_file_seek(nj_file_t* file, enum nj_file_from from, njsz distance) {
+void nj_file_seek(nj_file_t* file, enum nj_file_from from, njsp distance) {
   NJ_CHECKF_RETURN(nj_file_is_valid(file), "Invalid file");
   DWORD move_method;
   switch (from) {
@@ -87,7 +87,7 @@ void nj_file_seek(nj_file_t* file, enum nj_file_from from, njsz distance) {
   SetFilePointer(file->handle, distance, NULL, move_method);
 }
 
-njs64 nj_file_get_pos(const nj_file_t* file) {
+njsp nj_file_get_pos(const nj_file_t* file) {
   NJ_CHECKF_RETURN_VAL(nj_file_is_valid(file), NJ_FILE_INVALID_POS, "Invalid file");
   return SetFilePointer(file->handle, 0, NULL, FILE_CURRENT);
 }
@@ -97,7 +97,7 @@ bool nj_file_is_valid(const nj_file_t* file) {
   return file->handle != INVALID_HANDLE_VALUE;
 }
 
-njs64 nj_file_get_size(const nj_file_t* file) {
+njsp nj_file_get_size(const nj_file_t* file) {
   NJ_CHECKF_RETURN_VAL(nj_file_is_valid(file), NJ_FILE_INVALID_SIZE, "Invalid file");
   return GetFileSize(file->handle, NULL);
 }

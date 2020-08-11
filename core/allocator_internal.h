@@ -27,16 +27,16 @@
 /// allocation will acquire the remaining space (suffix padding).
 struct allocation_header_t {
   nju8* start;
-  nju32 size;
-  nju32 alignment;
+  njsp size;
+  njsp alignment;
 #if NJ_IS_DEV()
   nju8* p;
 #endif
 };
 
 allocation_header_t* get_allocation_header(void* p);
-nju8* align_forward(nju8* p, nju32 alignment);
-bool check_aligned_alloc(nju32 size, nju32 alignment);
+nju8* align_forward(nju8* p, njsp alignment);
+bool check_aligned_alloc(njsp size, njsp alignment);
 bool check_p_in_dev(void* p);
 
 #endif // NJ_CORE_ALLOCATOR_INTERNAL_H

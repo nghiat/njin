@@ -17,12 +17,12 @@ template <njsz INITIAL_SIZE = 4096>
 struct nj_linear_allocator_t : public nj_allocator_t {
   bool init(const char* name);
   void destroy() override;
-  void* aligned_alloc(nju32 size, nju32 alignment) override;
-  void* realloc(void* p, nju32 size) override;
+  void* aligned_alloc(njsp size, njsp alignment) override;
+  void* realloc(void* p, njsp size) override;
   void free(void* p) override;
 
   nju8 stack_page[INITIAL_SIZE];
-  njsz default_page_size;
+  njsp default_page_size;
   la_page_t* current_page;
   nju8* top;
 };

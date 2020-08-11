@@ -4,27 +4,13 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2020             //
 //----------------------------------------------------------------------------//
 
-#ifndef NJ_CORE_NJTYPE_H
-#define NJ_CORE_NJTYPE_H
+#ifndef NJ_CORE_FILE_UTILS_H
+#define NJ_CORE_FILE_UTILS_H
 
-#include <stdint.h>
+#include "core/os_string.h"
 
-typedef uint8_t nju8;
-typedef uint16_t nju16;
-typedef uint32_t nju32;
-typedef uint64_t nju64;
+struct nj_allocator_t;
 
-typedef int8_t njs8;
-typedef int16_t njs16;
-typedef int32_t njs32;
-typedef int64_t njs64;
+nju8* ez_read_whole_file(nj_allocator_t* allocator, const nj_os_char* path, njsp* read_bytes);
 
-typedef uintptr_t njup;
-typedef intptr_t njsp;
-
-typedef float njf32;
-typedef double njf64;
-
-typedef size_t njsz;
-
-#endif // NJ_CORE_NJTYPE_H
+#endif // NJ_CORE_FILE_UTILS_H
