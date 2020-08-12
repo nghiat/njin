@@ -120,7 +120,7 @@ void nj_window_t::destroy() {
   allocator->free(platform_data);
 }
 
-void nj_window_t::main_loop() {
+void nj_window_t::os_loop() {
   MSG msg;
   while (true) {
     if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
