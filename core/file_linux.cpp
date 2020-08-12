@@ -6,6 +6,8 @@
 
 #include "core/file.h"
 
+#include "core/log.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
@@ -47,7 +49,7 @@ void nj_file_delete_path(const char* path) {
 }
 
 bool nj_file_read(nj_file_t* file, void* buffer, njsp size, njsp* bytes_read) {
-  NJ_CHECKF_RETURN(nj_file_is_valid(file), "Invalid file");
+  NJ_CHECKF_RETURN_VAL(nj_file_is_valid(file), false, "Invalid file");
   njsp rv = read(file->handle, buffer, size);
   if (bytes_read)
     *bytes_read = rv;

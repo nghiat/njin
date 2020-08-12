@@ -7,6 +7,7 @@
 #ifndef NJ_CORE_NJTYPE_H
 #define NJ_CORE_NJTYPE_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 typedef uint8_t nju8;

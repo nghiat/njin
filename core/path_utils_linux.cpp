@@ -8,6 +8,8 @@
 
 #include "core/allocator.h"
 
+#include <string.h>
+
 #include <linux/limits.h>
 #include <sys/stat.h>
 #include <sys/types.h>
