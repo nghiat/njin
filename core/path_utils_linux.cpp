@@ -15,7 +15,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-bool nj_common_paths_init() {
+bool nj_path_utils_init() {
   char exe_path[NJ_MAX_PATH];
   ssize_t len = readlink("/proc/self/exe", exe_path, NJ_MAX_PATH);
   memcpy(g_exe_path, exe_path, len + 1);

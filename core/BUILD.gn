@@ -52,6 +52,7 @@ static_library("core") {
       "thread_win.cpp",
       "windows_lite.h",
     ]
+    libs = [ "DbgHelp.lib" ]
   }
 
   if (is_linux) {
@@ -64,5 +65,6 @@ static_library("core") {
       "path_utils_linux.cpp",
       "thread_unix.cpp",
     ]
+    libs = [ "dl" ]
   }
 }

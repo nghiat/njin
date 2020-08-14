@@ -15,7 +15,8 @@ struct la_page_t;
 // You can only free the most recent allocation.
 template <njsz INITIAL_SIZE = 4096>
 struct nj_linear_allocator_t : public nj_allocator_t {
-  bool init(const char* name);
+  nj_linear_allocator_t(const char* name) : nj_allocator_t(name, INITIAL_SIZE) {}
+  bool init();
   void destroy() override;
   void* aligned_alloc(njsp size, njsp alignment) override;
   void* realloc(void* p, njsp size) override;

@@ -254,14 +254,12 @@ static nju8* realloc_bigger(nj_free_list_allocator_t* fla,
   return NULL;
 }
 
-bool nj_free_list_allocator_t::init(const char* name, njsp size) {
-  name = name;
-  total_size = size;
+bool nj_free_list_allocator_t::init() {
   used_size = 0;
-  start = (nju8*)malloc(size);
+  start = (nju8*)malloc(total_size);
   NJ_CHECKF_RETURN_VAL(start, false, "Can't init allocator \"%s\": Out of memory");
   first_block = (freeblock_t*)start;
-  first_block->size = size;
+  first_block->size = total_size;
   first_block->next = NULL;
   return true;
 }

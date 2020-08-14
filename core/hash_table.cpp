@@ -28,8 +28,8 @@ static void ht_rehash(nj_hash_table_t* ht) {
   nj_da_resize(&ht->keys, new_cap);
   nj_da_resize(&ht->values, new_cap);
   memset(&ht->keys[0] + cap, 0, (new_cap - cap) * sizeof(ht->keys[0]));
-  nj_linear_allocator_t<> tmp_allocator;
-  tmp_allocator.init("ht_resize_tracking_allocator");
+  nj_linear_allocator_t<> tmp_allocator("ht_resize_tracking_allocator");
+  tmp_allocator.init();
   // rehash_tracker: 0 means the index not been moved, 1 otherwise
   nj_dynamic_array_t<char> rehash_tracker;
   nj_da_init(&rehash_tracker, &tmp_allocator);

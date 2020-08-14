@@ -25,9 +25,7 @@ static njsp get_current_page_remaning_size(const nj_linear_allocator_t<INITIAL_S
 }
 
 template <njsz INITIAL_SIZE>
-bool nj_linear_allocator_t<INITIAL_SIZE>::init(const char* name) {
-  name = name;
-  total_size = INITIAL_SIZE;
+bool nj_linear_allocator_t<INITIAL_SIZE>::init() {
   used_size += sizeof(la_page_t);
   default_page_size = NJ_LINEAR_ALLOCATOR_DEFAULT_PAGE_SIZE;
   current_page = (la_page_t*)&(stack_page[0]);

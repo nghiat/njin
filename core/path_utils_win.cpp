@@ -8,7 +8,7 @@
 
 #include <Windows.h>
 
-bool nj_common_paths_init() {
+bool nj_path_utils_init() {
   wchar_t exe_path[NJ_MAX_PATH];
   DWORD len = GetModuleFileName(NULL, exe_path, NJ_MAX_PATH);
   memcpy(g_exe_path, exe_path, (len + 1) * sizeof(wchar_t));

@@ -25,9 +25,9 @@ static const char* gc_log_level_strings[] = {
 
 static nj_file_t g_log_file;
 
-void nj_log(enum nj_log_level level, const char* file, int line, const char* format, ...) {
-  nj_linear_allocator_t<> allocator;
-  allocator.init("log_temp_allocator");
+void nj_log_internal(enum nj_log_level level, const char* file, int line, const char* format, ...) {
+  nj_linear_allocator_t<> allocator("log_temp_allocator");
+  allocator.init();
 
   const char* filename = strrchr(file, '\\') ? strrchr(file, '\\') + 1 : file;
   filename = strrchr(filename, '/') ? strrchr(filename, '/') + 1 : filename;
