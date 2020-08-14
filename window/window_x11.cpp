@@ -66,9 +66,7 @@ static void update_mouse_val(nj_window_t* w, enum nj_mouse mouse, int x, int y, 
   w->on_mouse_event(mouse, x, y, is_down);
 }
 
-bool nj_window_t::init(nj_allocator_t* in_allocator, const nj_os_char* in_title) {
-  title = in_title;
-  allocator = in_allocator;
+bool nj_window_t::init() {
   Display* xdisplay = XOpenDisplay(0);
   NJ_CHECKF_RETURN_VAL(xdisplay, false, "XOpenDisplay failed");
   xcb_connection_t* xcb_connection = XGetXCBConnection(xdisplay);
@@ -84,7 +82,7 @@ bool nj_window_t::init(nj_allocator_t* in_allocator, const nj_os_char* in_title)
   nju32 colormap = xcb_generate_id(xcb_connection);
   xcb_create_colormap(xcb_connection, XCB_COLORMAP_ALLOC_NONE, colormap, screen->root, screen->root_visual);
   uint32_t value_list[3] = {event_mask, colormap, 0};
-  xcb_create_window(xcb_connection, XCB_COPY_FROM_PARENT, xcb_window_id, screen->root, 0, 0, 150, 150, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, value_mask, value_list);
+  xcb_create_window(xcb_connection, XCB_COPY_FROM_PARENT, xcb_window_id, screen->root, 0, 0, width, height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, value_mask, value_list);
   xcb_change_property(xcb_connection, XCB_PROP_MODE_REPLACE, xcb_window_id, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(title), title);
   xcb_intern_atom_cookie_t cookie = xcb_intern_atom(xcb_connection, 1, 12, "WM_PROTOCOLS");
   xcb_intern_atom_reply_t* reply = xcb_intern_atom_reply(xcb_connection, cookie, 0);

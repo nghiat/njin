@@ -14,21 +14,26 @@ struct nj_allocator_t;
 struct nj_window_platform_t;
 
 struct nj_window_t {
-  bool init(nj_allocator_t* in_allocator, const nj_os_char* in_title);
+  nj_window_t(nj_allocator_t* allocator, const nj_os_char* title, int width, int height)
+      : allocator(allocator), title(title), width(width), height(height) {}
+  bool init();
   virtual void destroy();
   void os_loop();
-  virtual void loop() = 0;
-  virtual void on_mouse_event(enum nj_mouse mouse, int x, int y, bool is_down) = 0;
-  virtual void on_mouse_move(int x, int y) = 0;
-  virtual void on_key_event(enum nj_key key, bool is_down) = 0;
+  virtual void loop() {}
+  virtual void on_mouse_event(enum nj_mouse mouse, int x, int y, bool is_down) {}
+  virtual void on_mouse_move(int x, int y) {}
+  virtual void on_key_event(enum nj_key key, bool is_down) {}
 
   bool key_down[NJ_KEY_COUNT] = {};
   bool mouse_down[NJ_MOUSE_COUNT] = {};
   int old_mouse_x[NJ_MOUSE_COUNT] = {};
   int old_mouse_y[NJ_MOUSE_COUNT] = {};
-  const nj_os_char* title;
   nj_allocator_t* allocator;
+  const nj_os_char* title;
+  int width;
+  int height;
   nj_window_platform_t* platform_data;
+  void* handle = NULL;
 };
 
 #endif // NJ_WINDOW_WINDOW_H

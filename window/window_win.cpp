@@ -14,11 +14,13 @@
 
 #include <string.h>
 
+#define NJ_WIN_KEY_MAX 256
+
 struct nj_window_platform_t {
   HWND hwnd;
 };
 
-static enum nj_key g_vk_to_nj_key[NJ_KEY_COUNT];
+static enum nj_key g_vk_to_nj_key[NJ_WIN_KEY_MAX];
 
 static void init_key_codes_map() {
   static_assert(NJ_KEY_NONE == 0, "g_vk_to_nj_key is default initialized to 0s");
@@ -82,9 +84,7 @@ static LRESULT CALLBACK wnd_proc(_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM w_pa
   return 0;
 }
 
-bool nj_window_t::init(nj_allocator_t* in_allocator, const nj_os_char* in_title) {
-  this->title = in_title;
-  this->allocator = in_allocator;
+bool nj_window_t::init() {
   HINSTANCE hinstance;
   WNDCLASSEX wcex;
   HWND hwnd;
@@ -104,7 +104,7 @@ bool nj_window_t::init(nj_allocator_t* in_allocator, const nj_os_char* in_title)
   wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_APPLICATION));
 
   NJ_CHECKF_RETURN_VAL(RegisterClassEx(&wcex), false, "Can't register WNDCLASSEX");
-  hwnd = CreateWindow(title, title, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 1024, 768, NULL, NULL, hinstance, NULL);
+  hwnd = CreateWindow(title, title, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, NULL, NULL, hinstance, NULL);
   NJ_CHECKF_RETURN_VAL(hwnd, false, "Can't create HWND");
   SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)this);
   ShowWindow(hwnd, SW_SHOWNORMAL);
@@ -112,6 +112,7 @@ bool nj_window_t::init(nj_allocator_t* in_allocator, const nj_os_char* in_title)
   platform_data = (nj_window_platform_t*)allocator->alloc(sizeof(nj_window_platform_t));
   NJ_CHECKF_RETURN_VAL(platform_data, false, "Can't allocate memory for platform data");
   platform_data->hwnd = hwnd;
+  handle = &platform_data->hwnd;
   return true;
 }
 

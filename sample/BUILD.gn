@@ -1,0 +1,39 @@
+##----------------------------------------------------------------------------##
+## This file is distributed under the MIT License.                            ##
+## See LICENSE.txt for details.                                               ##
+## Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2020             ##
+##----------------------------------------------------------------------------##
+
+group("sample") {
+  deps = [
+    ":dx12_sample",
+  ]
+}
+
+executable("dx12_sample") {
+  sources = [
+    "dx12_sample.cpp",
+  ]
+
+  deps = [
+    ":dx12_shader",
+    "//core",
+    "//window",
+  ]
+
+  libs = [
+    "D3D12.lib",
+    "D3DCompiler.lib",
+    "DXGI.lib",
+  ]
+}
+
+copy("dx12_shader") {
+  sources = [
+    "shader.hlsl",
+  ]
+
+  outputs = [
+    "$root_out_dir/assets/{{source_file_part}}"
+  ]
+}
