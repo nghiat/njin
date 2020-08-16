@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------//
 // This file is distributed under the MIT License.                            //
 // See LICENSE.txt for details.                                               //
-// Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2019             //
+// Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2020             //
 //----------------------------------------------------------------------------//
 
 #include "core/debug.h"

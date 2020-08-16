@@ -28,4 +28,10 @@ struct nj_linear_allocator_t : public nj_allocator_t {
   nju8* top;
 };
 
+template <njsz INITIAL_SIZE = 4096>
+struct nj_scoped_la_allocator_t : public nj_linear_allocator_t<INITIAL_SIZE> {
+  nj_scoped_la_allocator_t(const char* name) : nj_linear_allocator_t<INITIAL_SIZE>(name) {}
+  ~nj_scoped_la_allocator_t() { this->destroy(); }
+};
+
 #endif // NJ_CORE_LINEAR_ALLOCATOR_H

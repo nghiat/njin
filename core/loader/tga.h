@@ -4,19 +4,11 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2020             //
 //----------------------------------------------------------------------------//
 
-#include "core/dynamic_lib.h"
+#ifndef NJ_CORE_LOADER_TGA_H
+#define NJ_CORE_LOADER_TGA_H
 
-#include <dlfcn.h>
+#include "core/os_string.h"
 
-bool nj_dl_open(nj_dynamic_lib_t* dl, const char* name) {
-  *dl = dlopen(name, RTLD_LAZY | RTLD_LOCAL);
-  return *dl;
-}
+bool nj_tga_write(const nju8* data, int width, int height, const nj_os_char* path);
 
-void nj_dl_close(nj_dynamic_lib_t* dl) {
-  dlclose(*dl);
-}
-
-void* nj_dl_get_proc(nj_dynamic_lib_t* dl, const char* name) {
-  return dlsym(*dl, name);
-}
+#endif // NJ_CORE_LOADER_TGA_H

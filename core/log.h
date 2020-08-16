@@ -51,26 +51,25 @@ bool nj_log_init(const nj_os_char* log_path);
 #define NJ_STRINGIFY(condition) NJ_STRINGIFY_INTERNAL(condition)
 
 #define NJ_CHECKF(condition, format, ...) \
-  {                                       \
-    if (!(condition)) {                   \
-      NJ_LOGF(format, ##__VA_ARGS__);     \
-    }                                     \
-  }
+  if (!(condition))                       \
+    NJ_LOGF(format, ##__VA_ARGS__);
+
+#define NJ_LOGF_RETURN(format, ...) \
+  NJ_LOGF(format, ##__VA_ARGS__);   \
+  return;
+
+#define NJ_LOGF_RETURN_VAL(retval, format, ...) \
+  NJ_LOGF(format, ##__VA_ARGS__);               \
+  return retval;
 
 #define NJ_CHECKF_RETURN(condition, format, ...) \
-  {                                       \
-    if (!(condition)) {                   \
-      NJ_LOGF(format, ##__VA_ARGS__);     \
-      return;                             \
-    }                                     \
-  }
+  if (!(condition))                              \
+    NJ_LOGF_RETURN(format, ##__VA_ARGS__);
 
 #define NJ_CHECKF_RETURN_VAL(condition, retval, format, ...) \
-{                                                            \
-  if (!(condition)) {                                        \
-    NJ_LOGF(format, ##__VA_ARGS__);                          \
-    return retval;                                           \
-  }                                                          \
-}
+  if (!(condition))                                          \
+    NJ_LOGF_RETURN_VAL(retval, format, ##__VA_ARGS__);
+
+#define NJ_UNUSED(a) (void)a
 
 #endif // NJ_CORE_LOG_H

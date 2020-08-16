@@ -28,6 +28,9 @@ template <typename T>
 void nj_da_destroy(nj_dynamic_array_t<T>* da);
 
 template <typename T>
+njsp nj_da_len(const nj_dynamic_array_t<T>* da);
+
+template <typename T>
 void nj_da_reserve(nj_dynamic_array_t<T>* da, njsp num);
 
 template <typename T>

@@ -33,13 +33,18 @@ void nj_da_destroy(nj_dynamic_array_t<T>* da) {
 }
 
 template <typename T>
+njsp nj_da_len(const nj_dynamic_array_t<T>* da) {
+  return da->length;
+}
+
+template <typename T>
 void nj_da_reserve(nj_dynamic_array_t<T>* da, njsp num) {
   if (num <= da->capacity)
     return;
   if (!da->p)
-    da->p = (T*)allocator_alloc(da->allocator, num * sizeof(T));
+    da->p = (T*)da->allocator->alloc(num * sizeof(T));
   else
-    da->p = (T*)allocator_realloc(da->allocator, da->p, num * sizeof(T));
+    da->p = (T*)da->allocator->realloc(da->p, num * sizeof(T));
   NJ_CHECKF_RETURN(da->p, "Can't reserve memory for nj_dynamic_array_t");
   da->capacity = num;
 }

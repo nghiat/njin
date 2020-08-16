@@ -36,6 +36,5 @@ bool operator==(const nj_v4_t& v1, const nj_v4_t& v2);
 njf32 vec4_dot(const nj_v4_t& lhs, const nj_v4_t& rhs);
 njf32 vec4_len(const nj_v4_t& v);
 nj_v4_t vec4_normalize(const nj_v4_t& v);
-vec3_t nj_v4_to_vec3(const nj_v4_t& v);
 
 #endif // NJ_CORE_MATH_VEC4_H
