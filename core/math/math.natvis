@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    <Type Name="nj_v2_t">
+        <Expand>
+            <Item Name="v">a</Item>
+        </Expand>
+    </Type>
+    <Type Name="nj_v3_t">
+        <Expand>
+            <Item Name="v">a</Item>
+        </Expand>
+    </Type>
+    <Type Name="nj_v4_t">
+        <Expand>
+            <Item Name="v">a</Item>
+        </Expand>
+    </Type>
+    <Type Name="nj_m4_t">
+        <Expand>
+            <Item Name="m0">a[0].a</Item>
+            <Item Name="m1">a[1].a</Item>
+            <Item Name="m2">a[2].a</Item>
+            <Item Name="m3">a[3].a</Item>
+        </Expand>
+    </Type>
+</AutoVisualizer>

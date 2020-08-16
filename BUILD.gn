@@ -8,6 +8,5 @@ group("njin") {
   deps = [
     "//core",
     "//sample",
-    "//window",
   ]
 }

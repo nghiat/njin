@@ -4,7 +4,7 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2020             //
 //----------------------------------------------------------------------------//
 
-#include "window/window.h"
+#include "core/window/window.h"
 
 #include "core/allocator.h"
 #include "core/log.h"

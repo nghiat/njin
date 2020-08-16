@@ -8,7 +8,7 @@
 #include "core/core_init.h"
 #include "core/log.h"
 #include "core/path_utils.h"
-#include "window/window.h"
+#include "core/window/window.h"
 
 #include <math.h>
 

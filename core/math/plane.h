@@ -4,26 +4,15 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2020             //
 //----------------------------------------------------------------------------//
 
-#ifndef NJ_WINDOW_KEY_H
-#define NJ_WINDOW_KEY_H
+#ifndef NJ_CORE_MATH_PLANE_H
+#define NJ_CORE_MATH_PLANE_H
 
-enum nj_key {
-  NJ_KEY_NONE = 0,
-  NJ_KEY_A,
-  NJ_KEY_D,
-  NJ_KEY_S,
-  NJ_KEY_W,
+#include "core/math/vec3.h"
 
-  NJ_KEY_COUNT,
+// dot((p - p0), n) = 0
+struct nj_plane_t {
+  nj_v3_t normal;
+  nj_v3_t p0;
 };
 
-enum nj_mouse {
-  NJ_MOUSE_NONE = 0,
-  NJ_MOUSE_LEFT,
-  NJ_MOUSE_MIDDLE,
-  NJ_MOUSE_RIGHT,
-
-  NJ_MOUSE_COUNT,
-};
-
-#endif // NJ_WINDOW_KEY_H
+#endif // NJ_CORE_MATH_PLANE_H

@@ -32,6 +32,25 @@ static_library("core") {
     "linear_allocator.inl",
     "log.cpp",
     "log.h",
+    "math/float.h",
+    "math/float.inl",
+    "math/mat4.h",
+    "math/mat4.inl",
+    "math/plane.h",
+    "math/quat.h",
+    "math/quat.inl",
+    "math/ray.h",
+    "math/ray.inl",
+    "math/sphere.h",
+    "math/transform.h",
+    "math/transform.inl",
+    "math/triangle.h",
+    "math/vec2.h",
+    "math/vec2.inl",
+    "math/vec3.h",
+    "math/vec3.inl",
+    "math/vec4.h",
+    "math/vec4.inl",
     "mono_time.h",
     "njtype.h",
     "os.h",
@@ -39,6 +58,8 @@ static_library("core") {
     "path_utils.cpp",
     "path_utils.h",
     "thread.h",
+    "window/input.h",
+    "window/window.h",
   ]
 
   if (is_win) {
@@ -50,9 +71,15 @@ static_library("core") {
       "os_string_win.cpp",
       "path_utils_win.cpp",
       "thread_win.cpp",
+      "window/window_win.cpp",
       "windows_lite.h",
     ]
-    libs = [ "DbgHelp.lib" ]
+    libs = [
+      "DbgHelp.lib",
+      "Gdi32.lib",
+      "User32.lib"
+    ]
+    public_configs = [ ":natvis" ]
   }
 
   if (is_linux) {
@@ -64,7 +91,18 @@ static_library("core") {
       "os_string_linux.cpp",
       "path_utils_linux.cpp",
       "thread_unix.cpp",
+      "window/window_x11.cpp",
     ]
-    libs = [ "dl" ]
+    libs = [
+      "dl",
+      "X11",
+      "X11-xcb",
+      "xcb",
+      "xcb-keysyms",
+    ]
   }
+}
+
+config("natvis") {
+  ldflags = [ "/NATVIS:" + rebase_path("math/math.natvis", root_build_dir)]
 }

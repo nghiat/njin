@@ -4,11 +4,11 @@
 // Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2020             //
 //----------------------------------------------------------------------------//
 
-#ifndef NJ_WINDOW_WINDOW_H
-#define NJ_WINDOW_WINDOW_H
+#ifndef NJ_CORE_WINDOW_WINDOW_H
+#define NJ_CORE_WINDOW_WINDOW_H
 
 #include "core/os_string.h"
-#include "window/input.h"
+#include "core/window/input.h"
 
 struct nj_allocator_t;
 struct nj_window_platform_t;
@@ -36,4 +36,4 @@ struct nj_window_t {
   void* handle = NULL;
 };
 
-#endif // NJ_WINDOW_WINDOW_H
+#endif // NJ_CORE_WINDOW_WINDOW_H
