@@ -32,6 +32,8 @@ inline nj_m4_t nj_look_at_lh(const nj_v3_t& eye, const nj_v3_t& target, const nj
   return nj_look_forward_lh(eye, eye - target, up);
 }
 
+// Left-handed.
+// Near plane -> z = 0, far plane -> z = 1
 inline nj_m4_t nj_perspective(njf32 fovy, njf32 aspect, njf32 z_near, njf32 z_far) {
   nj_m4_t result;
   result.a[0][0] = 1 / tanf(fovy / 2);
