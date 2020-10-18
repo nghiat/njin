@@ -9,7 +9,11 @@
 
 #include "core/njtype.h"
 
+struct nj_v4_t;
+
 struct nj_v3_t {
+  nj_v3_t& operator=(const nj_v4_t& v);
+
   union {
     struct {
       njf32 x;

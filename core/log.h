@@ -38,10 +38,12 @@ bool nj_log_init(const nj_os_char* log_path);
 #define NJ_LOGW(format, ...) nj_log_internal(NJ_LOG_LEVEL_WARNING, __FILE__, __LINE__, format, ##__VA_ARGS__)
 
 #if NJ_IS_DEV()
-#  define NJ_LOGF(format, ...)                                                      \
-    nj_log_internal(NJ_LOG_LEVEL_FATAL, __FILE__, __LINE__, format, ##__VA_ARGS__); \
-    if (nj_debug_is_debugger_attached()) {                                          \
-      NJ_DEBUG_BREAK_DEBUGGER();                                                    \
+#  define NJ_LOGF(format, ...)                                                        \
+    {                                                                                 \
+      nj_log_internal(NJ_LOG_LEVEL_FATAL, __FILE__, __LINE__, format, ##__VA_ARGS__); \
+      if (nj_debug_is_debugger_attached()) {                                          \
+        NJ_DEBUG_BREAK_DEBUGGER();                                                    \
+      }                                                                               \
     }
 #else
 #  define NJ_LOGF(format, ...) nj_log_internal(NJ_LOG_LEVEL_FATAL, __FILE__, __LINE__, format, ##__VA_ARGS__)
@@ -55,12 +57,16 @@ bool nj_log_init(const nj_os_char* log_path);
     NJ_LOGF(format, ##__VA_ARGS__);
 
 #define NJ_LOGF_RETURN(format, ...) \
-  NJ_LOGF(format, ##__VA_ARGS__);   \
-  return;
+  {                                 \
+    NJ_LOGF(format, ##__VA_ARGS__); \
+    return;                         \
+  }
 
 #define NJ_LOGF_RETURN_VAL(retval, format, ...) \
-  NJ_LOGF(format, ##__VA_ARGS__);               \
-  return retval;
+  {                                             \
+    NJ_LOGF(format, ##__VA_ARGS__);             \
+    return retval;                              \
+  }
 
 #define NJ_CHECKF_RETURN(condition, format, ...) \
   if (!(condition))                              \

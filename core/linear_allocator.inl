@@ -40,7 +40,7 @@ void nj_linear_allocator_t<INITIAL_SIZE>::destroy() {
   la_page_t* page = current_page;
   while (page != (la_page_t*)&(stack_page[0])) {
     la_page_t* prev = page->prev;
-    free(page);
+    ::free(page);
     page = prev;
   }
 }

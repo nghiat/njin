@@ -18,7 +18,10 @@ struct nj_window_t {
       : allocator(allocator), title(title), width(width), height(height) {}
   bool init();
   virtual void destroy();
+
   void os_loop();
+  void show_cursor(bool show);
+  void set_cursor_pos(int x, int y);
   virtual void loop() {}
   virtual void on_mouse_event(enum nj_mouse mouse, int x, int y, bool is_down) {}
   virtual void on_mouse_move(int x, int y) {}
@@ -28,10 +31,12 @@ struct nj_window_t {
   bool mouse_down[NJ_MOUSE_COUNT] = {};
   int old_mouse_x[NJ_MOUSE_COUNT] = {};
   int old_mouse_y[NJ_MOUSE_COUNT] = {};
+  bool is_cursor_visible = true;
   nj_allocator_t* allocator;
   const nj_os_char* title;
   int width;
   int height;
+
   nj_window_platform_t* platform_data;
   void* handle = NULL;
 };

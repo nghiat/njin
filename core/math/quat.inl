@@ -14,6 +14,7 @@
 
 #include <math.h>
 
+// res * q = 1
 nj_quat_t nj_quat_inverse(const nj_quat_t& q) {
   njf32 sum = q.a * q.a + q.b * q.b + q.c * q.c + q.d * q.d;
   return {q.a / sum, -q.b / sum, -q.c / sum, -q.d / sum};
@@ -24,11 +25,11 @@ njf32 nj_quat_norm(const nj_quat_t& q) {
 }
 
 nj_quat_t nj_quat_normalize(const nj_quat_t& q) {
-  njf32 norm = quat_norm(q);
+  njf32 norm = nj_quat_norm(q);
   return {q.a / norm, q.b / norm, q.c / norm, q.d / norm};
 }
 
-nj_m4_t nj_quat_to_mat(const nj_quat_t& q) {
+nj_m4_t nj_quat_to_m4(const nj_quat_t& q) {
   njf32 a = q.a;
   njf32 b = q.b;
   njf32 c = q.c;
@@ -37,13 +38,15 @@ nj_m4_t nj_quat_to_mat(const nj_quat_t& q) {
   njf32 b2 = q.b * q.b;
   njf32 c2 = q.c * q.c;
   njf32 d2 = q.d * q.d;
-  return {{a2 + b2 - c2 - d2, 2 * (b * c - a * d), 2 * (b * d + a * c), 0.f},
-          {2 * (b * c + a * d), a2 - b2 + c2 - d2, 2 * (c * d - a * b), 0.f},
-          {2 * (b * d - a * c), 2 * (c * d + a * b), a2 - b2 - c2 + d2, 0.f},
-          {0.f, 0.f, 0.f, 1.f}};
+  return {nj_v4_t{a2 + b2 - c2 - d2, 2 * (b * c + a * d), 2 * (b * d - a * c), 0.f},
+          nj_v4_t{2 * (b * c - a * d), a2 - b2 + c2 - d2, 2 * (c * d + a * b), 0.f},
+          nj_v4_t{2 * (b * d + a * c), 2 * (c * d - a * b), a2 - b2 - c2 + d2, 0.f},
+          nj_v4_t{0.f, 0.f, 0.f, 1.f}};
 }
 
-nj_quat_t nj_quat_rotate_vec3(const nj_v3_t& v, njf32 angle) {
+// https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation#Proof_of_the_quaternion_rotation_identity
+// q = cos(angle/2) + v*sin(angle/2)
+nj_quat_t nj_quat_rotate_v3(const nj_v3_t& v, njf32 angle) {
   njf32 cos_half = cosf(angle / 2);
   njf32 sin_half = sinf(angle / 2);
   return {cos_half, sin_half * v.x, sin_half * v.y, sin_half * v.z};

@@ -6,9 +6,11 @@
 
 #include "core/loader/obj.h"
 
+#include "core/dynamic_array.inl"
 #include "core/file_utils.h"
 #include "core/linear_allocator.h"
 #include "core/log.h"
+#include "core/math/vec3.h"
 
 #include <ctype.h>
 #include <stdlib.h>

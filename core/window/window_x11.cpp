@@ -59,11 +59,9 @@ static void init_input(nj_window_t* w) {
 
 static void update_mouse_val(nj_window_t* w, enum nj_mouse mouse, int x, int y, bool is_down) {
   w->mouse_down[mouse] = is_down;
-  if (is_down) {
-    w->old_mouse_x[mouse] = x;
-    w->old_mouse_y[mouse] = y;
-  }
   w->on_mouse_event(mouse, x, y, is_down);
+  w->old_mouse_x[mouse] = x;
+  w->old_mouse_y[mouse] = y;
 }
 
 bool nj_window_t::init() {
@@ -141,10 +139,12 @@ void nj_window_t::os_loop() {
         case XCB_MOTION_NOTIFY: {
           xcb_motion_notify_event_t* m = (xcb_motion_notify_event_t*)event;
           this->on_mouse_move(m->event_x, m->event_y);
-          for (int i = 0; i < NJ_MOUSE_COUNT; ++i) {
-            if (mouse_down[i]) {
-              old_mouse_x[i] = m->event_x;
-              old_mouse_y[i] = m->event_y;
+          if (w->is_cursor_visible) {
+            for (int i = 0; i < NJ_MOUSE_COUNT; ++i) {
+              if (mouse_down[i]) {
+                old_mouse_x[i] = m->event_x;
+                old_mouse_y[i] = m->event_y;
+              }
             }
           }
         } break;

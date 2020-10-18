@@ -34,11 +34,9 @@ static void update_mouse_val(nj_window_t* w, LPARAM l_param, enum nj_mouse mouse
   int x = GET_X_LPARAM(l_param);
   int y = GET_Y_LPARAM(l_param);
   w->mouse_down[mouse] = is_down;
-  if (is_down) {
-    w->old_mouse_x[mouse] = x;
-    w->old_mouse_y[mouse] = y;
-  }
   w->on_mouse_event(mouse, x, y, is_down);
+  w->old_mouse_x[mouse] = x;
+  w->old_mouse_y[mouse] = y;
 }
 
 static LRESULT CALLBACK wnd_proc(_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM w_param, _In_ LPARAM l_param) {
@@ -71,8 +69,8 @@ static LRESULT CALLBACK wnd_proc(_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM w_pa
     int x = GET_X_LPARAM(l_param);
     int y = GET_Y_LPARAM(l_param);
     w->on_mouse_move(x, y);
-    for (int i = 0; i < NJ_MOUSE_COUNT; ++i) {
-      if (w->mouse_down[i]) {
+    if (w->is_cursor_visible) {
+      for (int i = 0; i < NJ_MOUSE_COUNT; ++i) {
         w->old_mouse_x[i] = x;
         w->old_mouse_y[i] = y;
       }
@@ -133,4 +131,28 @@ void nj_window_t::os_loop() {
       loop();
     }
   }
+}
+
+void nj_window_t::show_cursor(bool show) {
+  ShowCursor(show);
+  this->is_cursor_visible = show;
+  if (show) {
+    ClipCursor(NULL);
+  }
+  else {
+    RECT rect;
+    GetClientRect(this->platform_data->hwnd, &rect);
+    POINT p1 = {rect.left, rect.top};
+    POINT p2 = {rect.right, rect.bottom};
+    ClientToScreen(this->platform_data->hwnd, &p1);
+    ClientToScreen(this->platform_data->hwnd, &p2);
+    SetRect(&rect, p1.x, p1.y, p2.x, p2.y); 
+    ClipCursor(&rect);
+  }
+}
+
+void nj_window_t::set_cursor_pos(int x, int y) {
+  POINT p{x, y};
+  ClientToScreen(this->platform_data->hwnd, &p);
+  SetCursorPos(p.x, p.y);
 }

@@ -266,7 +266,7 @@ bool nj_free_list_allocator_t::init() {
 
 void nj_free_list_allocator_t::destroy() {
   if (start)
-    free(start);
+    ::free(start);
 }
 
 void* nj_free_list_allocator_t::aligned_alloc(njsp size, njsp alignment) {

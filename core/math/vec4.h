@@ -7,7 +7,7 @@
 #ifndef NJ_CORE_MATH_VEC4_H
 #define NJ_CORE_MATH_VEC4_H
 
-#include "core/math/vec3.h"
+#include "core/njtype.h"
 
 struct nj_v4_t {
   union {

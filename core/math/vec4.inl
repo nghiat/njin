@@ -62,7 +62,7 @@ inline njf32 nj_v4_len(const nj_v4_t& v) {
   return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 }
 
-inline nj_v4_t nj_v4_normalize(const nj_v4_t& v);
+inline nj_v4_t nj_v4_normalize(const nj_v4_t& v) {
   return v / nj_v4_len(v);
 }
 

@@ -17,10 +17,10 @@ struct nj_quat_t {
   njf32 d;
 };
 
-nj_quat_t quat_inverse(const nj_quat_t& q);
-njf32 quat_norm(const nj_quat_t& q);
-nj_quat_t quat_normalize(const nj_quat_t& q);
-nj_m4_t nj_quat_to_mat(const nj_quat_t& q);
-nj_quat_t quat_rotate_v3(const nj_v3_t& v, njf32 angle);
+nj_quat_t nj_quat_inverse(const nj_quat_t& q);
+njf32 nj_quat_norm(const nj_quat_t& q);
+nj_quat_t nj_quat_normalize(const nj_quat_t& q);
+nj_m4_t nj_quat_to_m4(const nj_quat_t& q);
+nj_quat_t nj_quat_rotate_v3(const nj_v3_t& v, njf32 angle);
 
 #endif // NJ_CORE_MATH_QUAT_H

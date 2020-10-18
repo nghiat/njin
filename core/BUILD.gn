@@ -26,6 +26,8 @@ static_library("core") {
     "file_utils.h",
     "free_list_allocator.cpp",
     "free_list_allocator.h",
+    "gfx/cam.cpp",
+    "gfx/cam.h",
     "hash_table.cpp",
     "hash_table.h",
     "linear_allocator.h",
