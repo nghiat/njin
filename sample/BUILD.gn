@@ -31,7 +31,11 @@ copy("dx12_shader") {
   sources = [
     "cube.obj",
     "plane.obj",
+    "wolf.obj",
+
+    "rtt.hlsl",
     "shader.hlsl",
+    "shadow.hlsl",
   ]
 
   outputs = [

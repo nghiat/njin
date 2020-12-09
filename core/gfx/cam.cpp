@@ -12,10 +12,9 @@
 #include "core/math/vec3.inl"
 #include "core/window/window.h"
 
-bool nj_cam_init(nj_cam_t* cam, nj_window_t* w) {
+bool nj_cam_init(nj_cam_t* cam, const nj_v3_t& eye, const nj_v3_t& target, nj_window_t* w) {
   cam->w = w;
-  cam->eye = nj_v3_t{10.0f, 10.0f, 10.0f};
-  nj_v3_t target = {0.f, 0.f, 0.f};
+  cam->eye = eye;
   cam->forward = target - cam->eye;
   cam->dist = nj_v3_len(cam->forward);
   cam->forward = nj_v3_normalize(cam->forward);
@@ -27,22 +26,22 @@ bool nj_cam_init(nj_cam_t* cam, nj_window_t* w) {
 bool nj_cam_update(nj_cam_t* cam) {
   bool need_update_view = false;
   nj_v3_t cam_right = nj_v3_normalize(nj_v3_cross(cam->forward, cam->up));
-  if (cam->w->key_down[NJ_KEY_W]) {
+  if (cam->w->m_key_down[NJ_KEY_W]) {
     nj_v3_t forward = cam->forward * 0.1f;
     cam->eye += forward;
     need_update_view = true;
   }
-  if (cam->w->key_down[NJ_KEY_S]) {
+  if (cam->w->m_key_down[NJ_KEY_S]) {
     nj_v3_t backward = cam->forward * -0.1f;
     cam->eye += backward;
     need_update_view = true;
   }
-  if (cam->w->key_down[NJ_KEY_D]) {
+  if (cam->w->m_key_down[NJ_KEY_D]) {
     nj_v3_t right = cam_right * 0.1f;
     cam->eye += right;
     need_update_view = true;
   }
-  if (cam->w->key_down[NJ_KEY_A]) {
+  if (cam->w->m_key_down[NJ_KEY_A]) {
     nj_v3_t left = cam_right * -0.1f;
     cam->eye += left;
     need_update_view = true;
@@ -54,11 +53,11 @@ bool nj_cam_update(nj_cam_t* cam) {
 }
 
 void nj_cam_mouse_move(nj_cam_t* cam, int x, int y) {
-  if (cam->w->mouse_down[NJ_MOUSE_LEFT]) {
-    cam->w->set_cursor_pos(cam->w->old_mouse_x[NJ_MOUSE_LEFT], cam->w->old_mouse_y[NJ_MOUSE_LEFT]);
+  if (cam->w->m_mouse_down[NJ_MOUSE_LEFT]) {
+    cam->w->set_cursor_pos(cam->w->m_old_mouse_x[NJ_MOUSE_LEFT], cam->w->m_old_mouse_y[NJ_MOUSE_LEFT]);
 
-    int delta_x = cam->w->old_mouse_x[NJ_MOUSE_LEFT] - x;
-    int delta_y = cam->w->old_mouse_y[NJ_MOUSE_LEFT] - y;
+    int delta_x = cam->w->m_old_mouse_x[NJ_MOUSE_LEFT] - x;
+    int delta_y = cam->w->m_old_mouse_y[NJ_MOUSE_LEFT] - y;
     float angle_x = delta_x * 0.002f;
     float angle_y = delta_y * 0.002f;
     nj_v3_t right = nj_v3_cross(cam->forward, cam->up);
@@ -70,9 +69,9 @@ void nj_cam_mouse_move(nj_cam_t* cam, int x, int y) {
     cam->view_mat = nj_look_forward_lh(cam->eye, cam->forward, cam->up);
   }
 
-  if (cam->w->mouse_down[NJ_MOUSE_MIDDLE]) {
-    int delta_x = cam->w->old_mouse_x[NJ_MOUSE_MIDDLE] - x;
-    int delta_y = cam->w->old_mouse_y[NJ_MOUSE_MIDDLE] - y;
+  if (cam->w->m_mouse_down[NJ_MOUSE_MIDDLE]) {
+    int delta_x = cam->w->m_old_mouse_x[NJ_MOUSE_MIDDLE] - x;
+    int delta_y = cam->w->m_old_mouse_y[NJ_MOUSE_MIDDLE] - y;
     float angle_x = delta_x * 0.002f;
     float angle_y = delta_y * 0.002f;
     nj_v3_t backward = cam->forward * -1.0f;

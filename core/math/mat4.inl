@@ -32,7 +32,9 @@ inline nj_v4_t operator*(const nj_m4_t& m, const nj_v4_t& v) {
 
 inline nj_m4_t operator*(const nj_m4_t& m1, const nj_m4_t& m2) {
   nj_m4_t result;
+  // Multiply |each row of m1| with m2.
   for (int i = 0; i < 4; ++i) {
+    // Each row of result is the sum of products of m1 row with every m2 row.
     for (int j = 0; j < 4; ++j) {
       for (int k = 0; k < 4; ++k) {
         result.a[i][k] += m1.a[i][j] * m2.a[j][k];

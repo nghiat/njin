@@ -23,7 +23,7 @@ struct nj_cam_t {
   bool is_mouse_down;
 };
 
-bool nj_cam_init(nj_cam_t* cam, nj_window_t* w);
+bool nj_cam_init(nj_cam_t* cam, const nj_v3_t& eye, const nj_v3_t& target, nj_window_t* w);
 bool nj_cam_update(nj_cam_t* cam);
 void nj_cam_mouse_move(nj_cam_t* cam, int x, int y);
 void nj_cam_mouse_event(nj_cam_t* cam, enum nj_mouse mouse, int x, int y, bool is_down);

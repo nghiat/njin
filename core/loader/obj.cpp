@@ -124,12 +124,13 @@ bool nj_obj_init(nj_obj_t* obj, nj_allocator_t* allocator, const nj_os_char* pat
     while (*s != '\n' && s != e)
       ++s;
   }
+  temp_allocator.destroy();
 
   return true;
 }
 
 void nj_obj_destroy(nj_obj_t* obj) {
-  nj_da_destroy(&obj->vertices);
-  nj_da_destroy(&obj->uvs);
   nj_da_destroy(&obj->normals);
+  nj_da_destroy(&obj->uvs);
+  nj_da_destroy(&obj->vertices);
 }

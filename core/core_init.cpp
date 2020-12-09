@@ -8,6 +8,7 @@
 
 #include "core/core_allocators.h"
 #include "core/debug.h"
+#include "core/file.h"
 #include "core/log.h"
 #include "core/mono_time.h"
 #include "core/path_utils.h"
@@ -17,6 +18,7 @@ bool nj_core_init(const nj_os_char* log_path) {
   rv &= nj_mono_time_init();
   rv &= nj_core_allocators_init();
   rv &= nj_path_utils_init();
+  rv &= nj_file_init();
   nj_os_char abs_log_path[NJ_MAX_PATH];
   nj_path_from_exe_dir(log_path, abs_log_path, NJ_MAX_PATH);
   rv &= nj_log_init(abs_log_path);

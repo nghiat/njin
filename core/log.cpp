@@ -24,8 +24,11 @@ static const char* gc_log_level_strings[] = {
 };
 
 static nj_file_t g_log_file;
+static bool g_log_inited = false;
 
 void nj_log_internal(enum nj_log_level level, const char* file, int line, const char* format, ...) {
+  if (!g_log_inited)
+    return;
   nj_linear_allocator_t<> allocator("log_temp_allocator");
   allocator.init();
 
@@ -69,12 +72,13 @@ void nj_log_internal(enum nj_log_level level, const char* file, int line, const 
   OutputDebugStringA(log_buffer_to_file);
 #endif
   // Log to file
-  nj_file_write(&g_log_file, log_buffer_to_file, char_num);
+  nj_file_write(&g_log_file, log_buffer_to_file, char_num, NULL);
 
   allocator.destroy();
 }
 
 bool nj_log_init(const nj_os_char* log_path) {
   nj_file_open(&g_log_file, log_path, NJ_FILE_MODE_APPEND);
-  return nj_file_is_valid(&g_log_file);
+  g_log_inited = nj_file_is_valid(&g_log_file);
+  return g_log_inited;
 }

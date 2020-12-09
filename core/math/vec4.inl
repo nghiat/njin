@@ -14,6 +14,10 @@
 #include <math.h>
 #include <string.h>
 
+inline nj_v4_t nj_v3_to_v4(const nj_v3_t& v, njf32 w) {
+  return nj_v4_t{v.x, v.y, v.z, w};
+}
+
 inline nj_v4_t operator+(const nj_v4_t& v1, const nj_v4_t& v2) {
   return {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z, v1.w + v2.w};
 }

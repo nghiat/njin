@@ -9,6 +9,8 @@
 
 #include "core/njtype.h"
 
+struct nj_v3_t;
+
 struct nj_v4_t {
   union {
     struct {
@@ -20,6 +22,8 @@ struct nj_v4_t {
     njf32 a[4] = {};
   };
 };
+
+nj_v4_t nj_v3_to_v4(const nj_v3_t& v, njf32 w);
 
 nj_v4_t operator+(const nj_v4_t& v1, const nj_v4_t& v2);
 nj_v4_t operator-(const nj_v4_t& v1, const nj_v4_t& v2);

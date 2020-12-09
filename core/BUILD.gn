@@ -12,6 +12,7 @@ static_library("core") {
     "bit_stream.cpp",
     "bit_stream.h",
     "build.h",
+    "compiler.h",
     "core_allocators.cpp",
     "core_allocators.h",
     "core_init.cpp",
@@ -68,6 +69,7 @@ static_library("core") {
     "path_utils.cpp",
     "path_utils.h",
     "thread.h",
+    "utils.h",
     "window/input.h",
     "window/window.h",
   ]
