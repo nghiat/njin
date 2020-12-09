@@ -26,8 +26,8 @@ struct nj_free_list_allocator_t : public nj_allocator_t {
   void* realloc(void* p, njsp size) override;
   void free(void* p) override;
 
-  nju8* start;
-  freeblock_t* first_block;
+  nju8* m_start;
+  freeblock_t* m_first_block;
 };
 
 #endif // NJ_CORE_FREE_LIST_ALLOCATOR_H

@@ -21,24 +21,24 @@ struct la_page_t {
 
 template <njsz INITIAL_SIZE>
 static njsp get_current_page_remaning_size(const nj_linear_allocator_t<INITIAL_SIZE>* la) {
-  return la->current_page->size - (la->top - (nju8*)(la->current_page));
+  return la->m_current_page->size - (la->m_top - (nju8*)(la->m_current_page));
 }
 
 template <njsz INITIAL_SIZE>
 bool nj_linear_allocator_t<INITIAL_SIZE>::init() {
-  used_size += sizeof(la_page_t);
-  default_page_size = NJ_LINEAR_ALLOCATOR_DEFAULT_PAGE_SIZE;
-  current_page = (la_page_t*)&(stack_page[0]);
-  current_page->size = INITIAL_SIZE;
-  current_page->prev = NULL;
-  top = (nju8*)(current_page + 1);
+  m_used_size += sizeof(la_page_t);
+  m_default_page_size = NJ_LINEAR_ALLOCATOR_DEFAULT_PAGE_SIZE;
+  m_current_page = (la_page_t*)&(m_stack_page[0]);
+  m_current_page->size = INITIAL_SIZE;
+  m_current_page->prev = NULL;
+  m_top = (nju8*)(m_current_page + 1);
   return true;
 }
 
 template <njsz INITIAL_SIZE>
 void nj_linear_allocator_t<INITIAL_SIZE>::destroy() {
-  la_page_t* page = current_page;
-  while (page != (la_page_t*)&(stack_page[0])) {
+  la_page_t* page = m_current_page;
+  while (page != (la_page_t*)&(m_stack_page[0])) {
     la_page_t* prev = page->prev;
     ::free(page);
     page = prev;
@@ -49,32 +49,33 @@ template <njsz INITIAL_SIZE>
 void* nj_linear_allocator_t<INITIAL_SIZE>::aligned_alloc(njsp size, njsp alignment) {
   NJ_CHECKF_RETURN_VAL(check_aligned_alloc(size, alignment), NULL, "Alignment is not power of 2");
 
-  nju8* p = top + sizeof(allocation_header_t);
+  nju8* p = m_top + sizeof(allocation_header_t);
   p = align_forward(p, alignment);
-  njsp real_size = (p - top) + size;
+  njsp real_size = (p - m_top) + size;
   if (get_current_page_remaning_size(this) < real_size) {
     njsp new_page_size = sizeof(la_page_t) + sizeof(allocation_header_t) + size + alignment;
-    if (new_page_size < default_page_size) new_page_size = default_page_size;
+    if (new_page_size < m_default_page_size)
+      new_page_size = m_default_page_size;
     la_page_t* new_page = (la_page_t*)malloc(new_page_size);
-    NJ_CHECKF_RETURN_VAL(new_page, NULL, "Out of memory for new page for linear allocator \"%s\"", name);
+    NJ_CHECKF_RETURN_VAL(new_page, NULL, "Out of memory for new page for linear allocator \"%s\"", m_name);
     new_page->size = new_page_size;
-    new_page->prev = current_page;
+    new_page->prev = m_current_page;
     size += new_page_size;
-    used_size += get_current_page_remaning_size(this);
-    current_page = new_page;
-    top = (nju8*)(current_page + 1);
-    p = align_forward(top + sizeof(allocation_header_t), alignment);
-    real_size = (p - top) + size;
+    m_used_size += get_current_page_remaning_size(this);
+    m_current_page = new_page;
+    m_top = (nju8*)(m_current_page + 1);
+    p = align_forward(m_top + sizeof(allocation_header_t), alignment);
+    real_size = (p - m_top) + size;
   }
   allocation_header_t* hdr = get_allocation_header(p);
-  hdr->start = top;
+  hdr->start = m_top;
   hdr->size = size;
   hdr->alignment = alignment;
 #if NJ_IS_DEV()
   hdr->p = p;
 #endif
-  top += real_size;
-  used_size += real_size;
+  m_top += real_size;
+  m_used_size += real_size;
   return p;
 }
 
@@ -85,7 +86,7 @@ void* nj_linear_allocator_t<INITIAL_SIZE>::realloc(void* p, njsp size) {
   allocation_header_t* header = get_allocation_header(p);
   njsp old_size = header->size;
   // Not at top
-  if ((nju8*)p + header->size != top) {
+  if ((nju8*)p + header->size != m_top) {
     void* new_p = aligned_alloc(size, header->alignment);
     memcpy(new_p, p, header->size);
     return new_p;
@@ -98,9 +99,9 @@ void* nj_linear_allocator_t<INITIAL_SIZE>::realloc(void* p, njsp size) {
   }
   if (size == old_size)
     return p;
-  used_size = used_size + size - old_size;
+  m_used_size = m_used_size + size - old_size;
   header->size = size;
-  top = (nju8*)p + size;
+  m_top = (nju8*)p + size;
   return p;
 }
 
@@ -108,9 +109,9 @@ template <njsz INITIAL_SIZE>
 void nj_linear_allocator_t<INITIAL_SIZE>::free(void* p) {
   NJ_CHECKF_RETURN(check_p_in_dev(p), "Invalid pointer to free");
   allocation_header_t* header = get_allocation_header(p);
-  if ((nju8*)p + header->size != top) {
+  if ((nju8*)p + header->size != m_top) {
     return;
   }
-  top = header->start;
-  used_size -= header->size + ((nju8*)p - header->start);
+  m_top = header->start;
+  m_used_size -= header->size + ((nju8*)p - header->start);
 }

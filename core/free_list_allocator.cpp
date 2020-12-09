@@ -33,7 +33,7 @@ static nju8* find_best_fit_free_block(const nj_free_list_allocator_t* fla,
                                       freeblock_t** o_fit_block,
                                       freeblock_t** o_prior_block) {
   nju8* p = NULL;
-  freeblock_t* curr_block = fla->first_block;
+  freeblock_t* curr_block = fla->m_first_block;
   freeblock_t* curr_prior_block = NULL;
   *o_fit_block = NULL;
   *o_prior_block = NULL;
@@ -62,7 +62,7 @@ static void get_adjacent_blocks(const nj_free_list_allocator_t* fla,
                                 freeblock_t** prior_block,
                                 freeblock_t** next_block) {
   *prior_block = NULL;
-  *next_block = fla->first_block;
+  *next_block = fla->m_first_block;
   while (*next_block && p > (nju8*)(*next_block)) {
     *prior_block = *next_block;
     *next_block = (*next_block)->next;
@@ -77,7 +77,7 @@ static void link_separated_blocks(nj_free_list_allocator_t* fla,
   if (prior_block)
     prior_block->next = block;
   else
-    fla->first_block = block;
+    fla->m_first_block = block;
 }
 
 // Returns true if |size| is bigger than sizeof(allocation_header_t) which we
@@ -97,7 +97,7 @@ static void link_and_merge_free_blocks(nj_free_list_allocator_t* fla,
                                        freeblock_t** first,
                                        freeblock_t** second) {
   if (!*first) {
-    fla->first_block = *second;
+    fla->m_first_block = *second;
     return;
   }
   // Merge two blocks if they are contiguous.
@@ -115,12 +115,12 @@ static void link_and_merge_free_blocks(nj_free_list_allocator_t* fla,
 static void add_and_merge_free_block(nj_free_list_allocator_t* fla,
                                      freeblock_t* block) {
   freeblock_t* prior_block = NULL;
-  freeblock_t* next_block = fla->first_block;
+  freeblock_t* next_block = fla->m_first_block;
   get_adjacent_blocks(fla, (nju8*)block, &prior_block, &next_block);
   if (prior_block)
     link_and_merge_free_blocks(fla, &prior_block, &block);
   else
-    fla->first_block = block;
+    fla->m_first_block = block;
 
   if (next_block)
     link_and_merge_free_blocks(fla, &block, &next_block);
@@ -139,14 +139,14 @@ static bool shrink_free_block(nj_free_list_allocator_t* fla,
     if (prior_block)
       prior_block->next = block->next;
     else
-      fla->first_block = block->next;
-    fla->used_size += block->size;
+      fla->m_first_block = block->next;
+    fla->m_used_size += block->size;
     return false;
   }
   freeblock_t* shrunk_block = (freeblock_t*)((nju8*)block + size);
   *shrunk_block = (freeblock_t){.size = block_size_after, .next = block->next};
   link_separated_blocks(fla, shrunk_block, prior_block);
-  fla->used_size += size;
+  fla->m_used_size += size;
   return true;
 }
 
@@ -165,7 +165,7 @@ static void realloc_smaller(nj_free_list_allocator_t* fla,
     shifted_block->size = next_block->size + size_after_shrunk;
     shifted_block->next = next_block->next;
     link_and_merge_free_blocks(fla, &prior_block, &shifted_block);
-    fla->used_size -= size_after_shrunk;
+    fla->m_used_size -= size_after_shrunk;
     return;
   }
   // There is not enough space for a new freeblock_t, nothing changes.
@@ -178,7 +178,7 @@ static void realloc_smaller(nj_free_list_allocator_t* fla,
   new_block->size = size_after_shrunk;
   new_block->next = next_block;
   link_separated_blocks(fla, new_block, prior_block);
-  fla->used_size -= size_after_shrunk;
+  fla->m_used_size -= size_after_shrunk;
 }
 
 static nju8* realloc_bigger(nj_free_list_allocator_t* fla,
@@ -196,10 +196,10 @@ static nju8* realloc_bigger(nj_free_list_allocator_t* fla,
         new_block->size = size_after_extended;
         new_block->next = next_block->next;
         link_and_merge_free_blocks(fla, &prior_block, &new_block);
-        fla->used_size += size - header->size;
+        fla->m_used_size += size - header->size;
         header->size = size;
       } else {
-        fla->used_size += next_block->size;
+        fla->m_used_size += next_block->size;
         header->size += next_block->size;
         link_separated_blocks(fla, next_block->next, prior_block);
       }
@@ -216,7 +216,7 @@ static nju8* realloc_bigger(nj_free_list_allocator_t* fla,
     backup_prior_block = *prior_block;
   if (next_block)
     backup_next_block = *next_block;
-  freeblock_t* backup_first_block = fla->first_block;
+  freeblock_t* backup_m_first_block = fla->m_first_block;
   freeblock_t* new_block = (freeblock_t*)backup_header.start;
   new_block->size = (njsp)(header->size + (p - header->start));
   new_block->next = NULL;
@@ -226,7 +226,7 @@ static nju8* realloc_bigger(nj_free_list_allocator_t* fla,
   nju8* returned_pointer = find_best_fit_free_block(
       fla, size, backup_header.alignment, &fit_block, &prior_fit_block);
   if (returned_pointer) {
-    fla->used_size -= backup_header.size + (p - backup_header.start);
+    fla->m_used_size -= backup_header.size + (p - backup_header.start);
     memmove(returned_pointer, p, size);
     njsp padding_and_header = returned_pointer - (nju8*)fit_block;
     bool rv = shrink_free_block(
@@ -245,28 +245,25 @@ static nju8* realloc_bigger(nj_free_list_allocator_t* fla,
     *prior_block = backup_prior_block;
   if (next_block)
     *next_block = backup_next_block;
-  fla->first_block = backup_first_block;
+  fla->m_first_block = backup_m_first_block;
   *header = backup_header;
-  NJ_LOGD("Free list allocator \"%s\" doesn't have enough space to alloc %d "
-          "bytes",
-          fla->name,
-          size);
+  NJ_LOGD("Free list allocator \"%s\" doesn't have enough space to alloc %d bytes", fla->m_name, size);
   return NULL;
 }
 
 bool nj_free_list_allocator_t::init() {
-  used_size = 0;
-  start = (nju8*)malloc(total_size);
-  NJ_CHECKF_RETURN_VAL(start, false, "Can't init allocator \"%s\": Out of memory");
-  first_block = (freeblock_t*)start;
-  first_block->size = total_size;
-  first_block->next = NULL;
+  m_used_size = 0;
+  m_start = (nju8*)malloc(m_total_size);
+  NJ_CHECKF_RETURN_VAL(m_start, false, "Can't init allocator \"%s\": Out of memory");
+  m_first_block = (freeblock_t*)m_start;
+  m_first_block->size = m_total_size;
+  m_first_block->next = NULL;
   return true;
 }
 
 void nj_free_list_allocator_t::destroy() {
-  if (start)
-    ::free(start);
+  if (m_start)
+    ::free(m_start);
 }
 
 void* nj_free_list_allocator_t::aligned_alloc(njsp size, njsp alignment) {
@@ -274,7 +271,7 @@ void* nj_free_list_allocator_t::aligned_alloc(njsp size, njsp alignment) {
   freeblock_t* fit_block;
   freeblock_t* prior_block;
   nju8* p = find_best_fit_free_block(this, size, alignment, &fit_block, &prior_block);
-  NJ_CHECKF_RETURN_VAL(p, NULL, "Free list allocator \"%s\" doesn't have enough space to alloc %d bytes", name, size);
+  NJ_CHECKF_RETURN_VAL(p, NULL, "Free list allocator \"%s\" doesn't have enough space to alloc %d bytes", m_name, size);
   njsp padding_and_header = p - (nju8*)fit_block;
   bool rv = shrink_free_block(this, fit_block, prior_block, padding_and_header + size);
   allocation_header_t* hdr = get_allocation_header(p);
@@ -292,7 +289,7 @@ void* nj_free_list_allocator_t::realloc(void* p, njsp size) {
 
   allocation_header_t* header = get_allocation_header(p);
   // Remaining free space is surely not enough.
-  if (size > header->size + (total_size - used_size))
+  if (size > header->size + (m_total_size - m_used_size))
     return NULL;
 
   if (size == header->size) {
@@ -315,7 +312,7 @@ void nj_free_list_allocator_t::free(void* p) {
   NJ_CHECKF_RETURN(check_p_in_dev(p), "Invalid pointer to free");
   allocation_header_t* header = get_allocation_header(p);
   njsp freed_size = header->size + ((nju8*)p - header->start);
-  used_size -= freed_size;
+  m_used_size -= freed_size;
   freeblock_t* new_block = (freeblock_t*)header->start;
   new_block->size = freed_size;
   new_block->size = NULL;

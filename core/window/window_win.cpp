@@ -33,10 +33,10 @@ static void init_key_codes_map() {
 static void update_mouse_val(nj_window_t* w, LPARAM l_param, enum nj_mouse mouse, bool is_down) {
   int x = GET_X_LPARAM(l_param);
   int y = GET_Y_LPARAM(l_param);
-  w->mouse_down[mouse] = is_down;
+  w->m_mouse_down[mouse] = is_down;
   w->on_mouse_event(mouse, x, y, is_down);
-  w->old_mouse_x[mouse] = x;
-  w->old_mouse_y[mouse] = y;
+  w->m_old_mouse_x[mouse] = x;
+  w->m_old_mouse_y[mouse] = y;
 }
 
 static LRESULT CALLBACK wnd_proc(_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM w_param, _In_ LPARAM l_param) {
@@ -50,7 +50,7 @@ static LRESULT CALLBACK wnd_proc(_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM w_pa
     break;
   case WM_KEYUP:
   case WM_KEYDOWN:
-    w->key_down[g_vk_to_nj_key[w_param]] = msg == WM_KEYDOWN;
+    w->m_key_down[g_vk_to_nj_key[w_param]] = msg == WM_KEYDOWN;
     w->on_key_event(g_vk_to_nj_key[w_param], msg == WM_KEYDOWN);
     break;
   case WM_LBUTTONDOWN:
@@ -69,10 +69,10 @@ static LRESULT CALLBACK wnd_proc(_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM w_pa
     int x = GET_X_LPARAM(l_param);
     int y = GET_Y_LPARAM(l_param);
     w->on_mouse_move(x, y);
-    if (w->is_cursor_visible) {
+    if (w->m_is_cursor_visible) {
       for (int i = 0; i < NJ_MOUSE_COUNT; ++i) {
-        w->old_mouse_x[i] = x;
-        w->old_mouse_y[i] = y;
+        w->m_old_mouse_x[i] = x;
+        w->m_old_mouse_y[i] = y;
       }
     }
   } break;
@@ -98,25 +98,25 @@ bool nj_window_t::init() {
   wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
   wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
   wcex.lpszMenuName = NULL;
-  wcex.lpszClassName = title;
+  wcex.lpszClassName = m_title;
   wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_APPLICATION));
 
   NJ_CHECKF_RETURN_VAL(RegisterClassEx(&wcex), false, "Can't register WNDCLASSEX");
-  hwnd = CreateWindow(title, title, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, NULL, NULL, hinstance, NULL);
+  hwnd = CreateWindow(m_title, m_title, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, m_width, m_height, NULL, NULL, hinstance, NULL);
   NJ_CHECKF_RETURN_VAL(hwnd, false, "Can't create HWND");
   SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)this);
   ShowWindow(hwnd, SW_SHOWNORMAL);
   UpdateWindow(hwnd);
-  platform_data = (nj_window_platform_t*)allocator->alloc(sizeof(nj_window_platform_t));
-  NJ_CHECKF_RETURN_VAL(platform_data, false, "Can't allocate memory for platform data");
-  platform_data->hwnd = hwnd;
-  handle = &platform_data->hwnd;
+  m_platform_data = (nj_window_platform_t*)m_allocator->alloc(sizeof(nj_window_platform_t));
+  NJ_CHECKF_RETURN_VAL(m_platform_data, false, "Can't allocate memory for platform data");
+  m_platform_data->hwnd = hwnd;
+  m_handle = &m_platform_data->hwnd;
   return true;
 }
 
 void nj_window_t::destroy() {
-  DestroyWindow(platform_data->hwnd);
-  allocator->free(platform_data);
+  DestroyWindow(m_platform_data->hwnd);
+  m_allocator->free(m_platform_data);
 }
 
 void nj_window_t::os_loop() {
@@ -135,17 +135,17 @@ void nj_window_t::os_loop() {
 
 void nj_window_t::show_cursor(bool show) {
   ShowCursor(show);
-  this->is_cursor_visible = show;
+  this->m_is_cursor_visible = show;
   if (show) {
     ClipCursor(NULL);
   }
   else {
     RECT rect;
-    GetClientRect(this->platform_data->hwnd, &rect);
+    GetClientRect(m_platform_data->hwnd, &rect);
     POINT p1 = {rect.left, rect.top};
     POINT p2 = {rect.right, rect.bottom};
-    ClientToScreen(this->platform_data->hwnd, &p1);
-    ClientToScreen(this->platform_data->hwnd, &p2);
+    ClientToScreen(m_platform_data->hwnd, &p1);
+    ClientToScreen(m_platform_data->hwnd, &p2);
     SetRect(&rect, p1.x, p1.y, p2.x, p2.y); 
     ClipCursor(&rect);
   }
@@ -153,6 +153,6 @@ void nj_window_t::show_cursor(bool show) {
 
 void nj_window_t::set_cursor_pos(int x, int y) {
   POINT p{x, y};
-  ClientToScreen(this->platform_data->hwnd, &p);
+  ClientToScreen(m_platform_data->hwnd, &p);
   SetCursorPos(p.x, p.y);
 }

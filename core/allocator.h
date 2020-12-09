@@ -10,7 +10,7 @@
 #include "core/njtype.h"
 
 struct nj_allocator_t {
-  nj_allocator_t(const char* name, njsz total_size) : name(name), total_size(total_size) {}
+  nj_allocator_t(const char* name, njsz total_size) : m_name(name), m_total_size(total_size) {}
   virtual void destroy() = 0;
   virtual void* aligned_alloc(njsp size, njsp alignment) = 0;
   virtual void* realloc(void* p, njsp size) = 0;
@@ -18,11 +18,11 @@ struct nj_allocator_t {
 
   void* alloc(njsp size);
 
-  const char* name = nullptr;
+  const char* m_name = nullptr;
   /// Total size of the allocator in bytes.
-  njsp total_size = 0;
+  njsp m_total_size = 0;
   /// Allocations' sizes and supporting data of the allocator in bytes.
-  njsp used_size = 0;
+  njsp m_used_size = 0;
 };
 
 inline

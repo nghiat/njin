@@ -22,10 +22,10 @@ struct nj_linear_allocator_t : public nj_allocator_t {
   void* realloc(void* p, njsp size) override;
   void free(void* p) override;
 
-  nju8 stack_page[INITIAL_SIZE];
-  njsp default_page_size;
-  la_page_t* current_page;
-  nju8* top;
+  nju8 m_stack_page[INITIAL_SIZE];
+  njsp m_default_page_size;
+  la_page_t* m_current_page;
+  nju8* m_top;
 };
 
 template <njsz INITIAL_SIZE = 4096>
