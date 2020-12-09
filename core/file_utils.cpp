@@ -8,7 +8,7 @@
 
 #include "core/allocator.h"
 #include "core/dynamic_array.inl"
-#include "core/file.h"
+#include "core/file_internal.h"
 #include "core/log.h"
 
 nj_dynamic_array_t<nju8> nj_read_whole_file(nj_allocator_t* allocator, const nj_os_char* path, njsp* read_bytes) {
@@ -19,7 +19,7 @@ nj_dynamic_array_t<nju8> nj_read_whole_file(nj_allocator_t* allocator, const nj_
   njsp file_size = nj_file_get_size(&f);
   nj_da_init(&buffer, allocator);
   nj_da_resize(&buffer, file_size);
-  nj_file_read(&f, &buffer[0], file_size, NULL);
+  nj_file_read_plat(&f, &buffer[0], file_size, NULL);
   buffer[file_size] = 0;
   nj_file_close(&f);
   if (read_bytes)

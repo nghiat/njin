@@ -7,10 +7,11 @@
 #include "core/file.h"
 
 #include "core/log.h"
+#include "core/utils.h"
 
 #include <Windows.h>
 
-bool nj_file_open(nj_file_t* file, const wchar_t* path, enum nj_file_mode mode) {
+bool nj_file_open_plat(nj_file_t* file, const wchar_t* path, enum nj_file_mode mode) {
   NJ_CHECKF_RETURN_VAL(file, false, "Invalid file");
   NJ_CHECKF_RETURN_VAL(path, false, "Invalid path");
 
@@ -39,7 +40,7 @@ bool nj_file_open(nj_file_t* file, const wchar_t* path, enum nj_file_mode mode) 
   return true;
 }
 
-void nj_file_close(nj_file_t* file) {
+void nj_file_close_plat(nj_file_t* file) {
   NJ_CHECKF_RETURN(nj_file_is_valid(file), "Invalid file");
   CloseHandle(file->handle);
   file->handle = INVALID_HANDLE_VALUE;
@@ -55,7 +56,7 @@ void nj_file_delete_path(const wchar_t* path) {
   DeleteFile(path);
 }
 
-bool nj_file_read(nj_file_t* file, void* buffer, njsp size, njsp* bytes_read) {
+bool nj_file_read_plat(nj_file_t* file, void* buffer, njsp size, njsp* bytes_read) {
   NJ_CHECKF_RETURN_VAL(nj_file_is_valid(file), false, "Invalid file");
   DWORD read = 0;
   ReadFile(file->handle, buffer, size, &read, NULL);
@@ -64,13 +65,15 @@ bool nj_file_read(nj_file_t* file, void* buffer, njsp size, njsp* bytes_read) {
   return read;
 }
 
-void nj_file_write(nj_file_t* file, const void* buffer, njsp size) {
-  NJ_CHECKF_RETURN(nj_file_is_valid(file), "Invalid file");
-  DWORD written_bytes = 0;
-  WriteFile(file->handle, buffer, size, &written_bytes, NULL);
+bool nj_file_write_plat(nj_file_t* file, const void* buffer, njsp size, njsp* bytes_written) {
+  NJ_CHECKF_RETURN_VAL(nj_file_is_valid(file), false, "Invalid file");
+  DWORD bytes_written_plat = 0;
+  bool rv = WriteFile(file->handle, buffer, size, &bytes_written_plat, NULL);
+  nj_maybe_assign(bytes_written, (njsp)bytes_written_plat);
+  return rv;
 }
 
-void nj_file_seek(nj_file_t* file, enum nj_file_from from, njsp distance) {
+void nj_file_seek_plat(nj_file_t* file, enum nj_file_from from, njsp distance) {
   NJ_CHECKF_RETURN(nj_file_is_valid(file), "Invalid file");
   DWORD move_method;
   switch (from) {

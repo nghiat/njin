@@ -31,6 +31,8 @@ enum nj_file_from {
   NJ_FILE_FROM_END
 };
 
+struct file_buffer;
+
 struct nj_file_t {
 #if NJ_OS_WIN()
   HANDLE handle;
@@ -40,7 +42,10 @@ struct nj_file_t {
 #error "?"
 #endif
   const nj_os_char* path;
+  file_buffer* internal_buffer = NULL;
 };
+
+bool nj_file_init();
 
 bool nj_file_open(nj_file_t* file, const nj_os_char* path, enum nj_file_mode mode);
 void nj_file_close(nj_file_t* file);
@@ -50,9 +55,9 @@ void nj_file_delete_path(const nj_os_char* path);
 
 bool nj_file_read(nj_file_t* file, void* buffer, njsp size, njsp* bytes_read);
 bool nj_file_read_line(nj_file_t* file, char* buffer, njsp size);
-void nj_file_write(nj_file_t* file, const void* buffer, njsp size);
+bool nj_file_write(nj_file_t* file, const void* buffer, njsp size, njsp* bytes_written);
 void nj_file_seek(nj_file_t* file, enum nj_file_from from, njsp distance);
-njsp nj_file_get_pos(const nj_file_t* file);
+void nj_file_flush(nj_file_t* file);
 
 bool nj_file_is_valid(const nj_file_t* file);
 
