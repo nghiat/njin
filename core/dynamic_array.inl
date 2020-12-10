@@ -45,7 +45,7 @@ void nj_da_reserve(nj_dynamic_array_t<T>* da, njsp num) {
     da->p = (T*)da->allocator->alloc(num * sizeof(T));
   else
     da->p = (T*)da->allocator->realloc(da->p, num * sizeof(T));
-  NJ_CHECKF_RETURN(da->p, "Can't reserve memory for nj_dynamic_array_t");
+  NJ_CHECK_LOG_RETURN(da->p, "Can't reserve memory for nj_dynamic_array_t");
   da->capacity = num;
 }
 
@@ -57,7 +57,7 @@ void nj_da_resize(nj_dynamic_array_t<T>* da, njsp num) {
 
 template <typename T>
 void nj_da_remove_range(nj_dynamic_array_t<T>* da, njsp pos, njsp length) {
-  NJ_CHECKF_RETURN(pos >= 0 && pos < da->length && pos + length < da->length, "Can't remove invalid rage");
+  NJ_CHECK_LOG_RETURN(pos >= 0 && pos < da->length && pos + length < da->length, "Can't remove invalid rage");
   memmove(da->p + pos, da->p + pos + length, (da->length - pos - length) * sizeof(T));
   da->length -= length;
 }

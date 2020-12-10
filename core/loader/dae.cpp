@@ -31,7 +31,7 @@ static nj_xml_node_t* parse_xml(nj_allocator_t* allocator, const char* start, co
       const char* tag_start = p + 1;
       if (*tag_start == '?') {
         p = (const char*)memchr(p, '>', end - p);
-        NJ_CHECKF_RETURN_VAL(p, NULL, "Can't find closing bracket for metadata tag");
+        NJ_CHECK_LOG_RETURN_VAL(p, NULL, "Can't find closing bracket for metadata tag");
         continue;
       }
       while (*(++p) != '>') {}
@@ -96,14 +96,14 @@ static nj_xml_node_t* parse_xml(nj_allocator_t* allocator, const char* start, co
       if (*p != '<') {
         const char* text_start = p;
         const char* text_end = (const char*)memchr(p, '<', end - text_start);
-        NJ_CHECKF_RETURN_VAL(text_end, NULL, "Can't find closing tag");
+        NJ_CHECK_LOG_RETURN_VAL(text_end, NULL, "Can't find closing tag");
         node->text = alloc_string(allocator, text_start, text_end);
         p = text_end + 1;
 
         const char* closing_name_start = ++p;
         const char* closing_name_end = (const char*)memchr(p, '>', end - p);
-        NJ_CHECKF_RETURN_VAL(closing_name_end, NULL, "Can't find closing bracket of closing tag name");
-        NJ_CHECKF_RETURN_VAL(closing_name_end - closing_name_start && !memcmp(closing_name_start, node->tag_name, closing_name_end - closing_name_start), NULL, "Unmatched closing tag name");
+        NJ_CHECK_LOG_RETURN_VAL(closing_name_end, NULL, "Can't find closing bracket of closing tag name");
+        NJ_CHECK_LOG_RETURN_VAL(closing_name_end - closing_name_start && !memcmp(closing_name_start, node->tag_name, closing_name_end - closing_name_start), NULL, "Unmatched closing tag name");
         if (last_pos)
           *last_pos = closing_name_end;
         return node;
@@ -114,14 +114,14 @@ static nj_xml_node_t* parse_xml(nj_allocator_t* allocator, const char* start, co
         while (p != end && isspace(*p))
           ++p;
         const char* opening_bracket = p;
-        NJ_CHECKF_RETURN_VAL(*p == '<', NULL, "This codepath processes children or closing tag which have to start with <");
+        NJ_CHECK_LOG_RETURN_VAL(*p == '<', NULL, "This codepath processes children or closing tag which have to start with <");
         ++p;
         // It's closing tag.
         if (*p == '/') {
           const char* closing_name_start = ++p;
           const char* closing_name_end = (const char*)memchr(p, '>', end - p);
-          NJ_CHECKF_RETURN_VAL(closing_name_end, NULL, "Can't find closing bracket of closing tag name");
-          NJ_CHECKF_RETURN_VAL(closing_name_end - closing_name_start && !memcmp(closing_name_start, node->tag_name, closing_name_end - closing_name_start), NULL, "Unmatched closing tag name");
+          NJ_CHECK_LOG_RETURN_VAL(closing_name_end, NULL, "Can't find closing bracket of closing tag name");
+          NJ_CHECK_LOG_RETURN_VAL(closing_name_end - closing_name_start && !memcmp(closing_name_start, node->tag_name, closing_name_end - closing_name_start), NULL, "Unmatched closing tag name");
           if (last_pos)
             *last_pos = closing_name_end;
           return node;
@@ -168,7 +168,7 @@ bool nj_dae_init(nj_dae_t* dae, nj_allocator_t* allocator, const nj_os_char* pat
 
   nj_xml_node_t* mesh_position = dae_find_node(root, "library_geometries/geometry/mesh/source/float_array");
   int arr_len = atoi(mesh_position->attr_vals[1]);
-  NJ_CHECKF_RETURN_VAL(arr_len % 3 == 0, false, "Invalid vertex number");
+  NJ_CHECK_LOG_RETURN_VAL(arr_len % 3 == 0, false, "Invalid vertex number");
   nj_da_init(&dae->vertices, allocator);
   nj_da_reserve(&dae->vertices, arr_len / 3);
   char* arr_p = mesh_position->text;
@@ -178,7 +178,7 @@ bool nj_dae_init(nj_dae_t* dae, nj_allocator_t* allocator, const nj_os_char* pat
     float z = strtof(arr_p, &arr_p);
     nj_da_append(&dae->vertices, {x, y, z, 1.0f});
   }
-  NJ_CHECKF_RETURN_VAL(arr_len / 3 == nj_da_len(&dae->vertices), false, "Unmatched vertex number between attribute and text");
+  NJ_CHECK_LOG_RETURN_VAL(arr_len / 3 == nj_da_len(&dae->vertices), false, "Unmatched vertex number between attribute and text");
   return true;
 }
 

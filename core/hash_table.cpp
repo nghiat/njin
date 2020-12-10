@@ -64,7 +64,7 @@ static void ht_rehash(nj_hash_table_t* ht) {
 }
 
 static njsp ht_get(nj_hash_table_t* ht, njup key, int key_size, nju64 hash) {
-  NJ_CHECKF_RETURN_VAL(key_size == ht->key_size, NJ_HT_INVALID_INDEX, "Key sizes are not equal");
+  NJ_CHECK_RETURN_VAL(key_size == ht->key_size, NJ_HT_INVALID_INDEX);
   njsp len = ht->keys.length;
   njsp idx = hash % len;
   for (int i = 0; i < ht->probe_count; ++i, ++idx) {
@@ -76,7 +76,7 @@ static njsp ht_get(nj_hash_table_t* ht, njup key, int key_size, nju64 hash) {
 }
 
 static njsp ht_insert(nj_hash_table_t* ht, njup key, int key_size, nju64 hash) {
-  NJ_CHECKF_RETURN_VAL(key_size == ht->key_size, NJ_HT_INVALID_INDEX, "Key sizes are not equal");
+  NJ_CHECK_RETURN_VAL(key_size == ht->key_size, NJ_HT_INVALID_INDEX);
   njsp cap = ht->keys.length;
   if (ht->load_factor * cap < ht->key_count + 1) {
     ht_rehash(ht);
@@ -98,7 +98,7 @@ static njsp ht_insert(nj_hash_table_t* ht, njup key, int key_size, nju64 hash) {
 }
 
 static void ht_remove(nj_hash_table_t* ht, njup key, int key_size, nju64 hash) {
-  NJ_CHECKF_RETURN(key_size == ht->key_size, "Key sizes are not equal");
+  NJ_CHECK_RETURN(key_size == ht->key_size);
   njsp len = ht->keys.length;
   njsp idx = hash % len;
   for (int i = 0; i < ht->probe_count; ++i, ++idx) {
@@ -109,8 +109,8 @@ static void ht_remove(nj_hash_table_t* ht, njup key, int key_size, nju64 hash) {
 }
 
 bool nj_ht_init(nj_hash_table_t* ht, nj_allocator_t* allocator, int key_size) {
-  NJ_CHECKF_RETURN_VAL(nj_da_init(&ht->keys, allocator), false, "Can't init dynamic array");
-  NJ_CHECKF_RETURN_VAL(nj_da_init(&ht->values, allocator), false, "Can't init dynamic array");
+  NJ_CHECK_RETURN_VAL(nj_da_init(&ht->keys, allocator), false);
+  NJ_CHECK_RETURN_VAL(nj_da_init(&ht->values, allocator), false);
   ht->key_size = key_size;
   ht->key_count = 0;
   ht->load_factor = 0.65f;

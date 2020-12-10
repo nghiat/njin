@@ -20,7 +20,7 @@ static void* platform_thread_start(void* args) {
 bool nj_thread_init(nj_thread_t* thread, nj_thread_func_t start_func, void* args) {
   thread->start_func = start_func;
   thread->args = args;
-  NJ_CHECKF_RETURN_VAL(pthread_create(&thread->handle, NULL, platform_thread_start, (void*)thread) == 0, false, "Can't create a new thread");
+  NJ_CHECK_LOG_RETURN_VAL(pthread_create(&thread->handle, NULL, platform_thread_start, (void*)thread) == 0, false, "Can't create a new thread");
   return true;
 }
 

@@ -29,56 +29,62 @@ static bool g_log_inited = false;
 void nj_log_internal(enum nj_log_level level, const char* file, int line, const char* format, ...) {
   if (!g_log_inited)
     return;
-  nj_linear_allocator_t<> allocator("log_temp_allocator");
-  allocator.init();
+  nj_scoped_la_allocator_t<> temp_allocator("log_temp_allocator");
+  temp_allocator.init();
 
-  const char* filename = strrchr(file, '\\') ? strrchr(file, '\\') + 1 : file;
-  filename = strrchr(filename, '/') ? strrchr(filename, '/') + 1 : filename;
-  int char_num = snprintf(NULL, 0, "%s:%d %s", filename, line, format) + 1;
-  char* new_format = (char*)allocator.alloc(char_num);
-  snprintf(new_format, char_num, "%s:%d %s", filename, line, format);
+  // FILE(LINE) for visual studio click to go to location.
+  int log_len = 0;
+  const char* log_prefix_format = "%s(%d): %s ";
+  const char* level_str = gc_log_level_strings[(int)level];
+  int prefix_len = snprintf(NULL, 0, log_prefix_format, file, line, level_str);
+  char* log_buffer = (char*)temp_allocator.alloc(log_len + 1);
+  snprintf(log_buffer, prefix_len + 1, log_prefix_format, file, line, level_str);
+  log_len += prefix_len;
 
   va_list argptr, argptr2;
   va_start(argptr, format);
   va_copy(argptr2, argptr);
-  char_num = (vsnprintf(NULL, 0, new_format, argptr) + 1) * 2;
-  char* log_buffer = (char*)allocator.alloc(char_num);
-  va_start(argptr, format);
-  char_num = vsnprintf(log_buffer, char_num, new_format, argptr);
+  // +1 for new line char.
+  int msg_len = vsnprintf(NULL, 0, format, argptr) + 1;
   va_end(argptr);
+  temp_allocator.realloc(log_buffer, log_len + msg_len + 1);
+  va_start(argptr2, format);
+  vsnprintf(log_buffer + log_len, msg_len + 1, format, argptr2);
   va_end(argptr2);
+  log_len += msg_len;
+  log_buffer[log_len - 1] = '\n';
+  log_buffer[log_len] = 0;
 
-  if (level == NJ_LOG_LEVEL_FATAL) {
-    format = "\nStackTraces:\n%s";
+  if (level == NJ_LOG_LEVEL_FATAL && !nj_debug_is_debugger_attached()) {
+    const char* trace_format = "StackTraces:\n%s";
     char trace[NJ_MAX_STACK_TRACE_LENGTH];
     nj_debug_get_stack_trace(trace, NJ_MAX_STACK_TRACE_LENGTH);
-    int additional_char_num = snprintf(NULL, 0, format, trace) * 2;
-    allocator.realloc(log_buffer, char_num + additional_char_num);
-    additional_char_num = snprintf(log_buffer + char_num, additional_char_num, format, trace);
-    char_num += additional_char_num;
+    int trace_len = snprintf(NULL, 0, trace_format, trace);
+    temp_allocator.realloc(log_buffer, log_len + trace_len + 1);
+    snprintf(log_buffer + log_len, trace_len + 1, trace_format, trace);
+    log_len += trace_len;
   }
-  format = "%s: %s\n";
-  char_num = snprintf(NULL, 0, format, gc_log_level_strings[(int)level], log_buffer) + 1;
-  char* log_buffer_to_file = (char*)allocator.alloc(char_num);
-  char_num = snprintf(log_buffer_to_file, char_num, format, gc_log_level_strings[(int)level], log_buffer);
   // Log to stream
   FILE* stream;
   if (level == NJ_LOG_LEVEL_INFO || level == NJ_LOG_LEVEL_DEBUG)
     stream = stdout;
   else
     stream = stderr;
-  fprintf(stream, "%s", log_buffer_to_file);
+  fprintf(stream, "%s", log_buffer);
 #if NJ_OS_WIN()
-  OutputDebugStringA(log_buffer_to_file);
+  OutputDebugStringA(log_buffer);
 #endif
-  // Log to file
-  nj_file_write(&g_log_file, log_buffer_to_file, char_num, NULL);
-
-  allocator.destroy();
+  nj_file_write(&g_log_file, log_buffer, log_len, NULL);
 }
 
 bool nj_log_init(const nj_os_char* log_path) {
   nj_file_open(&g_log_file, log_path, NJ_FILE_MODE_APPEND);
   g_log_inited = nj_file_is_valid(&g_log_file);
   return g_log_inited;
+}
+
+void nj_log_destroy() {
+  if (g_log_inited)
+    nj_file_close(&g_log_file);
+  g_log_inited = false;
 }

@@ -26,7 +26,7 @@ struct image_spec_t {
 
 bool nj_tga_write(const nju8* data, int width, int height, const nj_os_char* path) {
   nj_file_t f;
-  NJ_CHECKF_RETURN_VAL(nj_file_open(&f, path, NJ_FILE_MODE_WRITE), false, "Can't open " NJ_OS_PCT " to write tga",  path);
+  NJ_CHECK_LOG_RETURN_VAL(nj_file_open(&f, path, NJ_FILE_MODE_WRITE), false, "Can't open " NJ_OS_PCT " to write tga",  path);
   {
     uint8_t id_length = 0;
     nj_file_write(&f, &id_length, sizeof(id_length), NULL);
@@ -44,7 +44,7 @@ bool nj_tga_write(const nju8* data, int width, int height, const nj_os_char* pat
     nj_file_write(&f, &spec, sizeof(spec), NULL);
   }
   {
-    image_spec_t spec; 
+    image_spec_t spec;
     spec.x_origin = 0;
     spec.y_origin = 0;
     spec.width = width;

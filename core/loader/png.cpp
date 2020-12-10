@@ -145,7 +145,7 @@ bool nj_png_init(nj_png_t* png, const nj_os_char* path, nj_allocator_t* allocato
   nj_scoped_la_allocator_t<> temp_allocator("png_temp_allocator");
   temp_allocator.init();
   nj_dynamic_array_t<nju8> data = nj_read_whole_file(&temp_allocator, path, NULL);
-  NJ_CHECKF_RETURN_VAL(!memcmp(data.p, &gc_png_signature[0], gc_png_sig_len), false, "Invalid PNG signature");
+  NJ_CHECK_LOG_RETURN_VAL(!memcmp(data.p, &gc_png_signature[0], gc_png_sig_len), false, "Invalid PNG signature");
   for (int i = gc_png_sig_len; i < nj_da_len(&data);) {
     int data_len = bswap32(*((int*)(data.p + i)));
     i += 4;
@@ -158,7 +158,7 @@ bool nj_png_init(nj_png_t* png, const nj_os_char* path, nj_allocator_t* allocato
     i += 4;
     switch (chunk_type) {
     case FOURCC("IHDR"): {
-      NJ_CHECKF_RETURN_VAL(data_len == 13, false, "Invalid IHDR length");
+      NJ_CHECK_RETURN_VAL(data_len == 13, false);
       png->width = bswap32(*(int*)p);
       p += 4;
       png->height = bswap32(*(int*)p);
@@ -182,11 +182,11 @@ bool nj_png_init(nj_png_t* png, const nj_os_char* path, nj_allocator_t* allocato
         NJ_LOGF_RETURN_VAL(false, "Invalid color type");
       }
       nju8 compression_method = *p++;
-      NJ_CHECKF_RETURN_VAL(!compression_method, false, "Invalid compression method");
+      NJ_CHECK_LOG_RETURN_VAL(!compression_method, false, "Invalid compression method");
       nju8 filter_method = *p++;
-      NJ_CHECKF_RETURN_VAL(!filter_method, false, "Invalid filter method");
+      NJ_CHECK_LOG_RETURN_VAL(!filter_method, false, "Invalid filter method");
       const nju8 interlace_method = *p++;
-      NJ_CHECKF_RETURN_VAL(!interlace_method, false, "Invalid interlace method");
+      NJ_CHECK_LOG_RETURN_VAL(!interlace_method, false, "Invalid interlace method");
       break;
     }
     case FOURCC("PLTE"):
@@ -196,9 +196,9 @@ bool nj_png_init(nj_png_t* png, const nj_os_char* path, nj_allocator_t* allocato
       nj_bs_init(&bs, p);
       // 2 bytes of zlib header.
       nju32 zlib_compress_method = nj_bs_consume_lsb(&bs, 4);
-      NJ_CHECKF_RETURN_VAL(zlib_compress_method == 8, false, "Invalid zlib compression method");
+      NJ_CHECK_LOG_RETURN_VAL(zlib_compress_method == 8, false, "Invalid zlib compression method");
       nju32 zlib_compress_info = nj_bs_consume_lsb(&bs, 4);
-      NJ_CHECKF_RETURN_VAL((p[0] * 256 + p[1]) % 31 == 0, false, "Invalid FCHECK bits");
+      NJ_CHECK_LOG_RETURN_VAL((p[0] * 256 + p[1]) % 31 == 0, false, "Invalid FCHECK bits");
       nj_bs_skip(&bs, 5);
       nju8 fdict = nj_bs_consume_lsb(&bs, 1);
       nju8 flevel = nj_bs_consume_lsb(&bs, 2);
@@ -226,7 +226,7 @@ bool nj_png_init(nj_png_t* png, const nj_os_char* path, nj_allocator_t* allocato
               code += 88;
             } else {
               code = code << 1 | nj_bs_consume_msb(&bs, 1);
-              NJ_CHECKF_RETURN_VAL(code >= 400 && code <= 511, false, "Can't decode fixed Huffman");
+              NJ_CHECK_LOG_RETURN_VAL(code >= 400 && code <= 511, false, "Can't decode fixed Huffman");
               *deflated_p++ = code - 256;
               continue;
             }
@@ -266,9 +266,9 @@ bool nj_png_init(nj_png_t* png, const nj_os_char* path, nj_allocator_t* allocato
             memset(lit_and_dist_lens + index, repeated_val, repeat_num);
             index += repeat_num;
           }
-          NJ_CHECKF_RETURN_VAL(index <= hlit + hdist, false, "Can't decode literal and length alphabet, overflowed");
+          NJ_CHECK_LOG_RETURN_VAL(index <= hlit + hdist, false, "Can't decode literal and length alphabet, overflowed");
         }
-        NJ_CHECKF_RETURN_VAL(lit_and_dist_lens[256], false, "Symbol 256 can't have length of 0");
+        NJ_CHECK_LOG_RETURN_VAL(lit_and_dist_lens[256], false, "Symbol 256 can't have length of 0");
         codes_for_len_t lit_or_len_cfl[gc_max_code_len];
         alphabet_t lit_or_len_alphabet = {lit_or_len_cfl, 0, 0};
         build_alphabet(lit_and_dist_lens, hlit, &lit_or_len_alphabet);

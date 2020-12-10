@@ -22,7 +22,7 @@ void nj_debug_get_stack_trace(char* buffer, int len) {
   // TODO: mutex
   // std::lock_guard<std::mutex> lk(g_mutex);
   memset(buffer, 0, len);
-  NJ_CHECKF(len <= NJ_MAX_STACK_TRACE_LENGTH, "len is too long");
+  NJ_CHECK(len <= NJ_MAX_STACK_TRACE_LENGTH);
   void* frames[NJ_MAX_TRACES];
   int count = CaptureStackBackTrace(0, NJ_MAX_TRACES, frames, NULL);
   int remaining_size = len;

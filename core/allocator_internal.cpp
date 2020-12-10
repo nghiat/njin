@@ -19,7 +19,7 @@ nju8* align_forward(nju8* p, njsp alignment) {
 }
 
 bool check_aligned_alloc(njsp size, njsp alignment) {
-  NJ_CHECKF_RETURN_VAL(size && alignment, false, "Invalid size or alignment");
+  NJ_CHECK_RETURN_VAL(size && alignment, false);
 
   // alignment has to be power of two.
   if (alignment & (alignment - 1)) {
@@ -29,7 +29,7 @@ bool check_aligned_alloc(njsp size, njsp alignment) {
 }
 
 bool check_p_in_dev(void* p) {
-  NJ_CHECKF_RETURN_VAL(p, false, "Invalid pointer or size");
+  NJ_CHECK_RETURN_VAL(p, false);
 
 #if NJ_IS_DEV()
   allocation_header_t* header = get_allocation_header(p);

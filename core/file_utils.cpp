@@ -15,7 +15,7 @@ nj_dynamic_array_t<nju8> nj_read_whole_file(nj_allocator_t* allocator, const nj_
   nj_dynamic_array_t<nju8> buffer;
   nj_file_t f;
   nj_file_open(&f, path, NJ_FILE_MODE_READ);
-  NJ_CHECKF_RETURN_VAL(nj_file_is_valid(&f), buffer, "Invalid file");
+  NJ_CHECK_RETURN_VAL(nj_file_is_valid(&f), buffer);
   njsp file_size = nj_file_get_size(&f);
   nj_da_init(&buffer, allocator);
   nj_da_resize(&buffer, file_size);

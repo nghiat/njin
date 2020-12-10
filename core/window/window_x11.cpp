@@ -66,9 +66,9 @@ static void update_mouse_val(nj_window_t* w, enum nj_mouse mouse, int x, int y, 
 
 bool nj_window_t::init() {
   Display* xdisplay = XOpenDisplay(0);
-  NJ_CHECKF_RETURN_VAL(xdisplay, false, "XOpenDisplay failed");
+  NJ_CHECK_LOG_RETURN_VAL(xdisplay, false, "XOpenDisplay failed");
   xcb_connection_t* xcb_connection = XGetXCBConnection(xdisplay);
-  NJ_CHECKF_RETURN_VAL(xcb_connection, false, "XGetXCBConnection failed");
+  NJ_CHECK_LOG_RETURN_VAL(xcb_connection, false, "XGetXCBConnection failed");
   XSetEventQueueOwner(xdisplay, XCBOwnsEventQueue);
   xcb_screen_t* screen = xcb_setup_roots_iterator(xcb_get_setup(xcb_connection)).data;
 

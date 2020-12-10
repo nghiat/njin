@@ -26,8 +26,8 @@
 #include <d3dcompiler.h>
 #include <dxgi1_4.h>
 
-#define DX_CHECKF_RETURN(condition) NJ_CHECKF_RETURN(condition == S_OK, "")
-#define DX_CHECKF_RETURN_FALSE(condition) NJ_CHECKF_RETURN_VAL(condition == S_OK, false, "")
+#define DX_CHECK_RETURN(condition) NJ_CHECK_RETURN(condition == S_OK)
+#define DX_CHECK_RETURN_FALSE(condition) NJ_CHECK_RETURN_VAL(condition == S_OK, false)
 
 #if NJ_IS_CLANG()
 #pragma clang diagnostic push
@@ -143,14 +143,14 @@ static bool create_descriptor_heap(dx12_descriptor_heap* descriptor_heap, ID3D12
   desc.NumDescriptors = max_descriptors_num;
   desc.Flags = flags;
   desc.NodeMask = 0;
-  DX_CHECKF_RETURN_FALSE(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptor_heap->heap)));
+  DX_CHECK_RETURN_FALSE(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptor_heap->heap)));
   descriptor_heap->increment_size = device->GetDescriptorHandleIncrementSize(type);
   return true;
 }
 
 static dx12_descriptor allocate_descriptor(dx12_descriptor_heap* descriptor_heap) {
   dx12_descriptor descriptor;
-  NJ_CHECKF_RETURN_VAL(descriptor_heap->curr_index < descriptor_heap->heap->GetDesc().NumDescriptors, descriptor, "Out of descriptors");
+  NJ_CHECK_LOG_RETURN_VAL(descriptor_heap->curr_index < descriptor_heap->heap->GetDesc().NumDescriptors, descriptor, "Out of descriptors");
   descriptor.descriptor_heap = descriptor_heap;
   descriptor.index = descriptor_heap->curr_index;
   descriptor.cpu_handle.ptr = descriptor_heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + descriptor_heap->curr_index * descriptor_heap->increment_size;
@@ -247,14 +247,14 @@ static D3D12_CONSTANT_BUFFER_VIEW_DESC create_const_buf_view_desc(D3D12_GPU_VIRT
 
 static bool create_buffer(dx12_buffer* buffer, ID3D12Device* device, const D3D12_HEAP_PROPERTIES* heap_props, const D3D12_RESOURCE_DESC* desc) {
   *buffer = {};
-  DX_CHECKF_RETURN_FALSE(device->CreateCommittedResource(heap_props, D3D12_HEAP_FLAG_NONE, desc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&buffer->buffer)));
+  DX_CHECK_RETURN_FALSE(device->CreateCommittedResource(heap_props, D3D12_HEAP_FLAG_NONE, desc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&buffer->buffer)));
   buffer->buffer->Map(0, NULL, &buffer->cpu_p);
   return true;
 }
 
 static dx12_subbuffer allocate_const_buffer(dx12_buffer* buffer, njsp size) {
   dx12_subbuffer subbuffer = {};
-  NJ_CHECKF_RETURN_VAL(buffer->offset + size <= buffer->buffer->GetDesc().Width, subbuffer, "Out of memory");
+  NJ_CHECK_LOG_RETURN_VAL(buffer->offset + size <= buffer->buffer->GetDesc().Width, subbuffer, "Out of memory");
   subbuffer.buffer = buffer;
   subbuffer.cpu_p = (nju8*)buffer->cpu_p + buffer->offset;
   subbuffer.gpu_p = buffer->buffer->GetGPUVirtualAddress() + buffer->offset;
@@ -284,14 +284,14 @@ bool dx12_window_t::init() {
   {
     // Enable debug layer.
     ID3D12Debug* debug_controller;
-    DX_CHECKF_RETURN_FALSE(D3D12GetDebugInterface(IID_PPV_ARGS(&debug_controller)));
+    DX_CHECK_RETURN_FALSE(D3D12GetDebugInterface(IID_PPV_ARGS(&debug_controller)));
     debug_controller->EnableDebugLayer();
     dxgi_factory_flags |= DXGI_CREATE_FACTORY_DEBUG;
     debug_controller->Release();
   }
 
   IDXGIFactory4* dxgi_factory;
-  DX_CHECKF_RETURN_FALSE(CreateDXGIFactory2(dxgi_factory_flags, IID_PPV_ARGS(&dxgi_factory)));
+  DX_CHECK_RETURN_FALSE(CreateDXGIFactory2(dxgi_factory_flags, IID_PPV_ARGS(&dxgi_factory)));
 
   {
     // Choose adapter (graphics card).
@@ -314,7 +314,7 @@ bool dx12_window_t::init() {
     }
 
     if (adapter_i == -1) {
-      NJ_CHECKF_RETURN_VAL(backup_adapter_i != -1, false, "Can't find a dx12 adapter");
+      NJ_CHECK_LOG_RETURN_VAL(backup_adapter_i != -1, false, "Can't find a dx12 adapter");
       adapter_i = backup_adapter_i;
     }
 
@@ -322,14 +322,14 @@ bool dx12_window_t::init() {
     DXGI_ADAPTER_DESC1 desc;
     adapter->GetDesc1(&desc);
     NJ_LOGI("%ls", desc.Description);
-    DX_CHECKF_RETURN_FALSE(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_device)));
+    DX_CHECK_RETURN_FALSE(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_device)));
   }
 
   {
     D3D12_COMMAND_QUEUE_DESC cmd_queue_desc = {};
     cmd_queue_desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
     cmd_queue_desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-    DX_CHECKF_RETURN_FALSE(m_device->CreateCommandQueue(&cmd_queue_desc, IID_PPV_ARGS(&m_cmd_queue)));
+    DX_CHECK_RETURN_FALSE(m_device->CreateCommandQueue(&cmd_queue_desc, IID_PPV_ARGS(&m_cmd_queue)));
   }
 
   DXGI_SWAP_CHAIN_DESC1 sc_desc = {};
@@ -342,9 +342,9 @@ bool dx12_window_t::init() {
   sc_desc.SampleDesc.Count = 1;
 
   IDXGISwapChain1* swap_chain;
-  DX_CHECKF_RETURN_FALSE(dxgi_factory->CreateSwapChainForHwnd(m_cmd_queue, *(HWND*)m_handle, &sc_desc, NULL, NULL, &swap_chain));
-  DX_CHECKF_RETURN_FALSE(dxgi_factory->MakeWindowAssociation(*(HWND*)m_handle, DXGI_MWA_NO_ALT_ENTER));
-  DX_CHECKF_RETURN_FALSE(swap_chain->QueryInterface(IID_PPV_ARGS(&m_swap_chain)));
+  DX_CHECK_RETURN_FALSE(dxgi_factory->CreateSwapChainForHwnd(m_cmd_queue, *(HWND*)m_handle, &sc_desc, NULL, NULL, &swap_chain));
+  DX_CHECK_RETURN_FALSE(dxgi_factory->MakeWindowAssociation(*(HWND*)m_handle, DXGI_MWA_NO_ALT_ENTER));
+  DX_CHECK_RETURN_FALSE(swap_chain->QueryInterface(IID_PPV_ARGS(&m_swap_chain)));
   dxgi_factory->Release();
   m_frame_no = m_swap_chain->GetCurrentBackBufferIndex();
 
@@ -353,7 +353,7 @@ bool dx12_window_t::init() {
       return false;
 
     for (int i = 0; i < sc_frame_count; ++i) {
-      DX_CHECKF_RETURN_FALSE(m_swap_chain->GetBuffer(i, IID_PPV_ARGS(&m_render_targets[i])));
+      DX_CHECK_RETURN_FALSE(m_swap_chain->GetBuffer(i, IID_PPV_ARGS(&m_render_targets[i])));
       m_rtv_descriptors[i] = allocate_descriptor(&m_rtv_heap);
       m_device->CreateRenderTargetView(m_render_targets[i], NULL, m_rtv_descriptors[i].cpu_handle);
     }
@@ -383,7 +383,7 @@ bool dx12_window_t::init() {
 
     D3D12_HEAP_PROPERTIES heap_props = create_heap_props(D3D12_HEAP_TYPE_DEFAULT);
 
-    DX_CHECKF_RETURN_FALSE(m_device->CreateCommittedResource(&heap_props, D3D12_HEAP_FLAG_NONE, &depth_tex_desc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clear_value, IID_PPV_ARGS(&m_depth_stencil)));
+    DX_CHECK_RETURN_FALSE(m_device->CreateCommittedResource(&heap_props, D3D12_HEAP_FLAG_NONE, &depth_tex_desc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clear_value, IID_PPV_ARGS(&m_depth_stencil)));
     m_depth_rt_descriptor = allocate_descriptor(&m_dsv_heap);
     D3D12_DEPTH_STENCIL_VIEW_DESC dsv_view_desc = {};
     dsv_view_desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -392,7 +392,7 @@ bool dx12_window_t::init() {
     dsv_view_desc.Texture2D.MipSlice = 0;
     m_device->CreateDepthStencilView(m_depth_stencil, &dsv_view_desc, m_depth_rt_descriptor.cpu_handle);
 
-    DX_CHECKF_RETURN_FALSE(m_device->CreateCommittedResource(&heap_props, D3D12_HEAP_FLAG_NONE, &depth_tex_desc, D3D12_RESOURCE_STATE_GENERIC_READ, &clear_value, IID_PPV_ARGS(&m_shadow_depth_stencil)));
+    DX_CHECK_RETURN_FALSE(m_device->CreateCommittedResource(&heap_props, D3D12_HEAP_FLAG_NONE, &depth_tex_desc, D3D12_RESOURCE_STATE_GENERIC_READ, &clear_value, IID_PPV_ARGS(&m_shadow_depth_stencil)));
     m_shadow_depth_rt_descriptor = allocate_descriptor(&m_dsv_heap);
     m_device->CreateDepthStencilView(m_shadow_depth_stencil, &dsv_view_desc, m_shadow_depth_rt_descriptor.cpu_handle);
   }
@@ -445,18 +445,18 @@ bool dx12_window_t::init() {
             D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
     ID3DBlob* signature;
     ID3DBlob* error;
-    DX_CHECKF_RETURN_FALSE(D3D12SerializeVersionedRootSignature(&root_sig_desc, &signature, &error));
-    DX_CHECKF_RETURN_FALSE(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_shadow_root_sig)));
+    DX_CHECK_RETURN_FALSE(D3D12SerializeVersionedRootSignature(&root_sig_desc, &signature, &error));
+    DX_CHECK_RETURN_FALSE(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_shadow_root_sig)));
 
     UINT compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
     nj_os_char shader_path[NJ_MAX_PATH];
     nj_path_from_exe_dir(NJ_OS_LIT("assets/shadow.hlsl"), shader_path, NJ_MAX_PATH);
-    DX_CHECKF_RETURN_FALSE(D3DCompileFromFile(shader_path, NULL, NULL, "VSMain", "vs_5_0", compile_flags, 0, &m_shadow_vs, NULL));
-    // DX_CHECKF_RETURN_FALSE(D3DCompileFromFile(shader_path, NULL, NULL, "PSMain", "ps_5_0", compile_flags, 0, &m_shadow_ps, NULL));
+    DX_CHECK_RETURN_FALSE(D3DCompileFromFile(shader_path, NULL, NULL, "VSMain", "vs_5_0", compile_flags, 0, &m_shadow_vs, NULL));
+    // DX_CHECK_RETURN_FALSE(D3DCompileFromFile(shader_path, NULL, NULL, "PSMain", "ps_5_0", compile_flags, 0, &m_shadow_ps, NULL));
 
     nj_path_from_exe_dir(NJ_OS_LIT("assets/shader.hlsl"), shader_path, NJ_MAX_PATH);
-    DX_CHECKF_RETURN_FALSE(D3DCompileFromFile(shader_path, NULL, NULL, "VSMain", "vs_5_0", compile_flags, 0, &m_rtt_vs, NULL));
-    DX_CHECKF_RETURN_FALSE(D3DCompileFromFile(shader_path, NULL, NULL, "PSMain", "ps_5_0", compile_flags, 0, &m_rtt_ps, NULL));
+    DX_CHECK_RETURN_FALSE(D3DCompileFromFile(shader_path, NULL, NULL, "VSMain", "vs_5_0", compile_flags, 0, &m_rtt_vs, NULL));
+    DX_CHECK_RETURN_FALSE(D3DCompileFromFile(shader_path, NULL, NULL, "PSMain", "ps_5_0", compile_flags, 0, &m_rtt_ps, NULL));
   }
 
   {
@@ -513,12 +513,12 @@ bool dx12_window_t::init() {
       shadow_pso_desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
       shadow_pso_desc.NumRenderTargets = 0;
       shadow_pso_desc.SampleDesc.Count = 1;
-      DX_CHECKF_RETURN_FALSE(m_device->CreateGraphicsPipelineState(&shadow_pso_desc, IID_PPV_ARGS(&m_shadow_pso)));
+      DX_CHECK_RETURN_FALSE(m_device->CreateGraphicsPipelineState(&shadow_pso_desc, IID_PPV_ARGS(&m_shadow_pso)));
     }
 
     for (int i = 0; i < sc_frame_count; ++i)
-      DX_CHECKF_RETURN_FALSE(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_cmd_allocators[i])));
-    DX_CHECKF_RETURN_FALSE(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_cmd_allocators[m_frame_no], m_shadow_pso, IID_PPV_ARGS(&m_cmd_list)));
+      DX_CHECK_RETURN_FALSE(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_cmd_allocators[i])));
+    DX_CHECK_RETURN_FALSE(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_cmd_allocators[m_frame_no], m_shadow_pso, IID_PPV_ARGS(&m_cmd_list)));
     m_cmd_list->Close();
 
     D3D12_INPUT_ELEMENT_DESC rtt_elem_descs[] = {
@@ -553,8 +553,8 @@ bool dx12_window_t::init() {
           create_root_sig_desc_1_1(nj_static_array_size(root_params), root_params, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
       ID3DBlob* signature;
       ID3DBlob* error;
-      DX_CHECKF_RETURN_FALSE(D3D12SerializeVersionedRootSignature(&root_sig_desc, &signature, &error));
-      DX_CHECKF_RETURN_FALSE(
+      DX_CHECK_RETURN_FALSE(D3D12SerializeVersionedRootSignature(&root_sig_desc, &signature, &error));
+      DX_CHECK_RETURN_FALSE(
           m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rtt_root_sig)));
     }
 
@@ -579,7 +579,7 @@ bool dx12_window_t::init() {
       rtt_pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
       rtt_pso_desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
       rtt_pso_desc.SampleDesc.Count = 1;
-      DX_CHECKF_RETURN_FALSE(m_device->CreateGraphicsPipelineState(&rtt_pso_desc, IID_PPV_ARGS(&m_rtt_pso)));
+      DX_CHECK_RETURN_FALSE(m_device->CreateGraphicsPipelineState(&rtt_pso_desc, IID_PPV_ARGS(&m_rtt_pso)));
     }
   }
 
@@ -596,7 +596,7 @@ bool dx12_window_t::init() {
     res_desc.SampleDesc.Quality = 0;
     res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
     res_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-    DX_CHECKF_RETURN_FALSE(m_device->CreateCommittedResource(&create_heap_props(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE, &res_desc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&m_vertex_buffer)));
+    DX_CHECK_RETURN_FALSE(m_device->CreateCommittedResource(&create_heap_props(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE, &res_desc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&m_vertex_buffer)));
   }
 
   {
@@ -609,7 +609,7 @@ bool dx12_window_t::init() {
     nju8* vertex_buffer_begin;
     njsp vertices_offset = 0;
     njsp normals_offset = 0;
-    DX_CHECKF_RETURN_FALSE(m_vertex_buffer->Map(0, &D3D12_RANGE{0, 0}, (void**)&vertex_buffer_begin));
+    DX_CHECK_RETURN_FALSE(m_vertex_buffer->Map(0, &D3D12_RANGE{0, 0}, (void**)&vertex_buffer_begin));
     int obj_count = nj_static_array_size(obj_paths);
     for (int i = 0; i < obj_count; ++i) {
       nj_obj_t obj;
@@ -637,10 +637,10 @@ bool dx12_window_t::init() {
   }
 
   {
-    DX_CHECKF_RETURN_FALSE(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
+    DX_CHECK_RETURN_FALSE(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
     ++m_fence_vals[m_frame_no];
     m_fence_event = CreateEvent(NULL, FALSE, FALSE, NULL);
-    NJ_CHECKF_RETURN_VAL(m_fence_event, false, "");
+    NJ_CHECK_RETURN_VAL(m_fence_event, false);
     wait_for_gpu();
   }
 
@@ -662,8 +662,8 @@ void dx12_window_t::loop() {
   m_rtt_cb.mvp = perspective * m_cam.view_mat;
   memcpy(m_rtt_cb_subbuffer.cpu_p, &m_rtt_cb, sizeof(m_rtt_cb));
 
-  DX_CHECKF_RETURN(m_cmd_allocators[m_frame_no]->Reset());
-  DX_CHECKF_RETURN(m_cmd_list->Reset(m_cmd_allocators[m_frame_no], m_shadow_pso));
+  DX_CHECK_RETURN(m_cmd_allocators[m_frame_no]->Reset());
+  DX_CHECK_RETURN(m_cmd_list->Reset(m_cmd_allocators[m_frame_no], m_shadow_pso));
 
   D3D12_VIEWPORT viewport = {};
   viewport.TopLeftX = 0;
@@ -713,14 +713,14 @@ void dx12_window_t::loop() {
 
   m_cmd_list->Close();
   m_cmd_queue->ExecuteCommandLists(1, (ID3D12CommandList**)&m_cmd_list);
-  DX_CHECKF_RETURN(m_swap_chain->Present(1, 0));
+  DX_CHECK_RETURN(m_swap_chain->Present(1, 0));
   // Prepare to render the next frame
   nju64 curr_fence_val = m_fence_vals[m_frame_no];
-  DX_CHECKF_RETURN(m_cmd_queue->Signal(m_fence, curr_fence_val));
+  DX_CHECK_RETURN(m_cmd_queue->Signal(m_fence, curr_fence_val));
   m_frame_no = m_swap_chain->GetCurrentBackBufferIndex();
   // If the next frame is not ready to be rendered yet, wait until it's ready.
   if (m_fence->GetCompletedValue() < m_fence_vals[m_frame_no]) {
-    DX_CHECKF_RETURN(m_fence->SetEventOnCompletion(m_fence_vals[m_frame_no], m_fence_event));
+    DX_CHECK_RETURN(m_fence->SetEventOnCompletion(m_fence_vals[m_frame_no], m_fence_event));
     WaitForSingleObjectEx(m_fence_event, INFINITE, FALSE);
   }
   m_fence_vals[m_frame_no] = curr_fence_val + 1;
@@ -738,10 +738,10 @@ void dx12_window_t::wait_for_gpu() {
   // Wait for pending GPU work to complete.
 
   // Schedule a Signal command in the queue.
-  DX_CHECKF_RETURN(m_cmd_queue->Signal(m_fence, m_fence_vals[m_frame_no]));
+  DX_CHECK_RETURN(m_cmd_queue->Signal(m_fence, m_fence_vals[m_frame_no]));
 
   // Wait until the fence has been processed.
-  DX_CHECKF_RETURN(m_fence->SetEventOnCompletion(m_fence_vals[m_frame_no], m_fence_event));
+  DX_CHECK_RETURN(m_fence->SetEventOnCompletion(m_fence_vals[m_frame_no], m_fence_event));
   WaitForSingleObjectEx(m_fence_event, INFINITE, FALSE);
 
   // Increment the fence value for the current frame.

@@ -101,14 +101,14 @@ bool nj_window_t::init() {
   wcex.lpszClassName = m_title;
   wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_APPLICATION));
 
-  NJ_CHECKF_RETURN_VAL(RegisterClassEx(&wcex), false, "Can't register WNDCLASSEX");
+  NJ_CHECK_LOG_RETURN_VAL(RegisterClassEx(&wcex), false, "Can't register WNDCLASSEX");
   hwnd = CreateWindow(m_title, m_title, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, m_width, m_height, NULL, NULL, hinstance, NULL);
-  NJ_CHECKF_RETURN_VAL(hwnd, false, "Can't create HWND");
+  NJ_CHECK_LOG_RETURN_VAL(hwnd, false, "Can't create HWND");
   SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)this);
   ShowWindow(hwnd, SW_SHOWNORMAL);
   UpdateWindow(hwnd);
   m_platform_data = (nj_window_platform_t*)m_allocator->alloc(sizeof(nj_window_platform_t));
-  NJ_CHECKF_RETURN_VAL(m_platform_data, false, "Can't allocate memory for platform data");
+  NJ_CHECK_LOG_RETURN_VAL(m_platform_data, false, "Can't allocate memory for platform data");
   m_platform_data->hwnd = hwnd;
   m_handle = &m_platform_data->hwnd;
   return true;
@@ -146,7 +146,7 @@ void nj_window_t::show_cursor(bool show) {
     POINT p2 = {rect.right, rect.bottom};
     ClientToScreen(m_platform_data->hwnd, &p1);
     ClientToScreen(m_platform_data->hwnd, &p2);
-    SetRect(&rect, p1.x, p1.y, p2.x, p2.y); 
+    SetRect(&rect, p1.x, p1.y, p2.x, p2.y);
     ClipCursor(&rect);
   }
 }

@@ -80,7 +80,7 @@ bool nj_debug_init() {
 
 void nj_debug_get_stack_trace(char* buffer, int len) {
   memset(buffer, 0, len);
-  NJ_CHECKF_RETURN(len <= NJ_MAX_STACK_TRACE_LENGTH, "len is too long");
+  NJ_CHECK_RETURN(len <= NJ_MAX_STACK_TRACE_LENGTH);
   void* traces[NJ_MAX_TRACES];
   int num = backtrace((void**)traces, NJ_MAX_TRACES);
   char** symbols = backtrace_symbols(traces, num);

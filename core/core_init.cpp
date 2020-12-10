@@ -13,6 +13,13 @@
 #include "core/mono_time.h"
 #include "core/path_utils.h"
 
+#include <stdlib.h>
+
+static void nj_core_destroy() {
+  nj_log_destroy();
+  return;
+}
+
 bool nj_core_init(const nj_os_char* log_path) {
   bool rv = true;
   rv &= nj_mono_time_init();
@@ -23,5 +30,7 @@ bool nj_core_init(const nj_os_char* log_path) {
   nj_path_from_exe_dir(log_path, abs_log_path, NJ_MAX_PATH);
   rv &= nj_log_init(abs_log_path);
   rv &= nj_debug_init();
+
+  atexit(nj_core_destroy);
   return rv;
 }

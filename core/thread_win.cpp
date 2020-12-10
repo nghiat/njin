@@ -20,7 +20,7 @@ bool nj_thread_init(nj_thread_t* thread, nj_thread_func_t start_func, void* args
   thread->start_func = start_func;
   thread->args = args;
   thread->handle = CreateThread(NULL, 0, platform_thread_start, (void*)thread, 0, NULL);
-  NJ_CHECKF_RETURN_VAL(thread->handle != NULL, false, "Can't create a new thread");
+  NJ_CHECK_LOG_RETURN_VAL(thread->handle != NULL, false, "Can't create a new thread");
   return true;
 }
 

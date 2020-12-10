@@ -36,14 +36,16 @@ bool nj_file_open(nj_file_t* file, const nj_os_char* path, enum nj_file_mode mod
   if (!rv)
     return false;
   for (int i = 0; i < gc_max_buffer; ++i) {
-    if (!g_buffers[i].is_in_used)
+    if (!g_buffers[i].is_in_used) {
       g_buffers[i].len = 0;
       g_buffers[i].offset = 0;
       g_buffers[i].is_in_used = true;
       g_buffers[i].is_writing = false;
       file->internal_buffer = &g_buffers[i];
+      break;
+    }
   }
-  NJ_CHECKF_RETURN_VAL(file->internal_buffer, false, "Can't get a file buffer, too many files are being opened");
+  NJ_CHECK_LOG_RETURN_VAL(file->internal_buffer, false, "Can't get a file buffer, too many files are being opened");
   return true;
 }
 
@@ -59,13 +61,13 @@ void nj_file_close(nj_file_t* file) {
       }
     }
   }
-  NJ_CHECKF_RETURN(!file->internal_buffer, "Invalid file buffer");
+  NJ_CHECK_RETURN(!file->internal_buffer);
 }
 
 bool nj_file_read(nj_file_t* file, void* out, njsp size, njsp* bytes_read) {
-  NJ_CHECKF_RETURN_VAL(size, false, "")
+  NJ_CHECK_RETURN_VAL(size, false)
   file_buffer* fbuf = file->internal_buffer;
-  NJ_CHECKF_RETURN_VAL(fbuf, false, "")
+  NJ_CHECK_RETURN_VAL(fbuf, false)
 
   njsp bytes_left = fbuf->len - fbuf->offset;
   njsp total_bytes_read = 0;
@@ -108,9 +110,9 @@ bool nj_file_read(nj_file_t* file, void* out, njsp size, njsp* bytes_read) {
 }
 
 bool nj_file_write(nj_file_t* file, const void* in, njsp size, njsp* bytes_written) {
-  NJ_CHECKF_RETURN_VAL(size, false, "")
+  NJ_CHECK_RETURN_VAL(size, false);
   file_buffer* fbuf = file->internal_buffer;
-  NJ_CHECKF_RETURN_VAL(fbuf, false, "")
+  NJ_CHECK_RETURN_VAL(fbuf, false);
 
   njsp bytes_left = fbuf->len - fbuf->offset;
   njsp total_bytes_written = 0;
@@ -187,28 +189,10 @@ void nj_file_flush(nj_file_t* file) {
   file_buffer* fbuf = file->internal_buffer;
   if (fbuf) {
     if (fbuf->is_writing && fbuf->offset > 0) {
-      NJ_CHECKF_RETURN(nj_file_write_plat(file, fbuf->buffer, fbuf->offset, NULL), "");
+      NJ_CHECK_RETURN(nj_file_write_plat(file, fbuf->buffer, fbuf->offset, NULL));
       fbuf->is_writing = false;
       fbuf->offset = 0;
       fbuf->len = 0;
     }
   }
 }
-
-// bool nj_file_read_line(nj_file_t* file, char* buffer, njsp size) {
-//   njsp curr_pos = nj_file_get_pos(file);
-//   njsp read;
-//   if (!nj_file_read(file, buffer, size - 1, &read)) {
-//     buffer[read] = '\0';
-//     return false;
-//   }
-//   char* eol = (char*)memchr(buffer, '\n', read);
-//   if (!eol) {
-//     buffer[read] = '\0';
-//     return false;
-//   }
-//   njsp delta = eol - buffer;
-//   buffer[delta] = '\0';
-//   nj_file_seek(file, NJ_FILE_FROM_BEGIN, curr_pos + delta + 1);
-//   return true;
-// }

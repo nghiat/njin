@@ -31,6 +31,7 @@ void nj_log_internal(enum nj_log_level level, const char* file, int line, const 
 #define NJ_LOG_SIZE (1024 + NJ_MAX_STACK_TRACE_LENGTH)
 
 bool nj_log_init(const nj_os_char* log_path);
+void nj_log_destroy();
 
 // See log_level
 #define NJ_LOGI(format, ...) nj_log_internal(NJ_LOG_LEVEL_INFO, __FILE__, __LINE__, format, ##__VA_ARGS__)
@@ -50,11 +51,15 @@ bool nj_log_init(const nj_os_char* log_path);
 #endif
 
 #define NJ_STRINGIFY_INTERNAL(condition) #condition
-#define NJ_STRINGIFY(condition) NJ_STRINGIFY_INTERNAL(condition)
+#define NJ_STRINGIFY(condition) NJ_STRINGIFY_INTERNAL(condition) " doesn't match"
 
-#define NJ_CHECKF(condition, format, ...) \
-  if (!(condition))                       \
-    NJ_LOGF(format, ##__VA_ARGS__);
+#define NJ_CHECK(condition) \
+  if (!(condition))         \
+    NJ_LOGF("%s", NJ_STRINGIFY(condition));
+
+#define NJ_CHECK_LOG(condition, format, ...) \
+  if (!(condition))                          \
+    NJ_LOGF(format, __VA_ARGS__);
 
 #define NJ_LOGF_RETURN(format, ...) \
   {                                 \
@@ -68,13 +73,21 @@ bool nj_log_init(const nj_os_char* log_path);
     return retval;                              \
   }
 
-#define NJ_CHECKF_RETURN(condition, format, ...) \
-  if (!(condition))                              \
-    NJ_LOGF_RETURN(format, ##__VA_ARGS__);
+#define NJ_CHECK_RETURN(condition) \
+  if (!(condition))                \
+    NJ_LOGF_RETURN("%s", NJ_STRINGIFY(condition));
 
-#define NJ_CHECKF_RETURN_VAL(condition, retval, format, ...) \
-  if (!(condition))                                          \
-    NJ_LOGF_RETURN_VAL(retval, format, ##__VA_ARGS__);
+#define NJ_CHECK_RETURN_VAL(condition, retval) \
+  if (!(condition))                            \
+    NJ_LOGF_RETURN_VAL(retval, "%s", NJ_STRINGIFY(condition));
+
+#define NJ_CHECK_LOG_RETURN(condition, format, ...) \
+  if (!(condition))                                 \
+    NJ_LOGF_RETURN(format, __VA_ARGS__);
+
+#define NJ_CHECK_LOG_RETURN_VAL(condition, retval, format, ...) \
+  if (!(condition))                                             \
+    NJ_LOGF_RETURN_VAL(retval, format, __VA_ARGS__);
 
 #define NJ_UNUSED(a) (void)a
 

@@ -254,7 +254,7 @@ static nju8* realloc_bigger(nj_free_list_allocator_t* fla,
 bool nj_free_list_allocator_t::init() {
   m_used_size = 0;
   m_start = (nju8*)malloc(m_total_size);
-  NJ_CHECKF_RETURN_VAL(m_start, false, "Can't init allocator \"%s\": Out of memory");
+  NJ_CHECK_LOG_RETURN_VAL(m_start, false, "Can't init allocator \"%s\": Out of memory");
   m_first_block = (freeblock_t*)m_start;
   m_first_block->size = m_total_size;
   m_first_block->next = NULL;
@@ -267,11 +267,11 @@ void nj_free_list_allocator_t::destroy() {
 }
 
 void* nj_free_list_allocator_t::aligned_alloc(njsp size, njsp alignment) {
-  NJ_CHECKF_RETURN_VAL(check_aligned_alloc(size, alignment), NULL, "Alignment is not power of 2");
+  NJ_CHECK_LOG_RETURN_VAL(check_aligned_alloc(size, alignment), NULL, "Alignment is not power of 2");
   freeblock_t* fit_block;
   freeblock_t* prior_block;
   nju8* p = find_best_fit_free_block(this, size, alignment, &fit_block, &prior_block);
-  NJ_CHECKF_RETURN_VAL(p, NULL, "Free list allocator \"%s\" doesn't have enough space to alloc %d bytes", m_name, size);
+  NJ_CHECK_LOG_RETURN_VAL(p, NULL, "Free list allocator \"%s\" doesn't have enough space to alloc %d bytes", m_name, size);
   njsp padding_and_header = p - (nju8*)fit_block;
   bool rv = shrink_free_block(this, fit_block, prior_block, padding_and_header + size);
   allocation_header_t* hdr = get_allocation_header(p);
@@ -285,7 +285,7 @@ void* nj_free_list_allocator_t::aligned_alloc(njsp size, njsp alignment) {
 }
 
 void* nj_free_list_allocator_t::realloc(void* p, njsp size) {
-  NJ_CHECKF_RETURN_VAL(check_p_in_dev(p) && size, NULL, "Invalid pointer to realloc");
+  NJ_CHECK_LOG_RETURN_VAL(check_p_in_dev(p) && size, NULL, "Invalid pointer to realloc");
 
   allocation_header_t* header = get_allocation_header(p);
   // Remaining free space is surely not enough.
@@ -309,7 +309,7 @@ void* nj_free_list_allocator_t::realloc(void* p, njsp size) {
 }
 
 void nj_free_list_allocator_t::free(void* p) {
-  NJ_CHECKF_RETURN(check_p_in_dev(p), "Invalid pointer to free");
+  NJ_CHECK_LOG_RETURN(check_p_in_dev(p), "Invalid pointer to free");
   allocation_header_t* header = get_allocation_header(p);
   njsp freed_size = header->size + ((nju8*)p - header->start);
   m_used_size -= freed_size;

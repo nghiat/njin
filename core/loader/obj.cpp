@@ -124,7 +124,6 @@ bool nj_obj_init(nj_obj_t* obj, nj_allocator_t* allocator, const nj_os_char* pat
     while (*s != '\n' && s != e)
       ++s;
   }
-  temp_allocator.destroy();
 
   return true;
 }

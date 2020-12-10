@@ -15,8 +15,8 @@
 #include <unistd.h>
 
 bool nj_file_open(nj_file_t* file, const char* path, enum nj_file_mode mode) {
-  NJ_CHECKF_RETURN_VAL(file, false, "Invalid file");
-  NJ_CHECKF_RETURN_VAL(path, false, "Invalid path");
+  NJ_CHECK_RETURN_VAL(file, false);
+  NJ_CHECK_RETURN_VAL(path, false);
 
   file->path = path;
   int flags = 0;
@@ -32,24 +32,24 @@ bool nj_file_open(nj_file_t* file, const char* path, enum nj_file_mode mode) {
 }
 
 void nj_file_close(nj_file_t* file) {
-  NJ_CHECKF_RETURN(nj_file_is_valid(file), "Invalid file");
+  NJ_CHECK_RETURN(nj_file_is_valid(file));
   if (!close(file->handle)) {
     file->handle = -1;
   }
 }
 
 void nj_file_delete(nj_file_t* file) {
-  NJ_CHECKF_RETURN(nj_file_is_valid(file), "Invalid file");
+  NJ_CHECK_RETURN(nj_file_is_valid(file));
   nj_file_delete_path(file->path);
 }
 
 void nj_file_delete_path(const char* path) {
-  NJ_CHECKF_RETURN(path, "Invalid path");
+  NJ_CHECK_RETURN(path);
   unlink(path);
 }
 
 bool nj_file_read(nj_file_t* file, void* buffer, njsp size, njsp* bytes_read) {
-  NJ_CHECKF_RETURN_VAL(nj_file_is_valid(file), false, "Invalid file");
+  NJ_CHECK_RETURN_VAL(nj_file_is_valid(file), false);
   njsp rv = read(file->handle, buffer, size);
   if (bytes_read)
     *bytes_read = rv;
@@ -57,12 +57,12 @@ bool nj_file_read(nj_file_t* file, void* buffer, njsp size, njsp* bytes_read) {
 }
 
 void nj_file_write(nj_file_t* file, const void* buffer, njsp size) {
-  NJ_CHECKF_RETURN(nj_file_is_valid(file), "Invalid file");
+  NJ_CHECK_RETURN(nj_file_is_valid(file));
   write(file->handle, buffer, size);
 }
 
 void nj_file_seek(nj_file_t* file, enum nj_file_from from, njsp distance) {
-  NJ_CHECKF_RETURN(nj_file_is_valid(file), "Invalid file");
+  NJ_CHECK_RETURN(nj_file_is_valid(file));
   int whence;
   switch (from) {
   case NJ_FILE_FROM_BEGIN:
@@ -79,17 +79,17 @@ void nj_file_seek(nj_file_t* file, enum nj_file_from from, njsp distance) {
 }
 
 njsp nj_file_get_pos(const nj_file_t* file) {
-  NJ_CHECKF_RETURN_VAL(nj_file_is_valid(file), NJ_FILE_INVALID_POS, "Invalid file");
+  NJ_CHECK_RETURN_VAL(nj_file_is_valid(file), NJ_FILE_INVALID_POS);
   return lseek(file->handle, 0, SEEK_CUR);
 }
 
 bool nj_file_is_valid(const nj_file_t* file) {
-  NJ_CHECKF_RETURN_VAL(file, false, "Invalid file");
+  NJ_CHECK_RETURN_VAL(file, false);
   return file->handle != -1;
 }
 
 njsp nj_file_get_size(const nj_file_t* file) {
-  NJ_CHECKF_RETURN_VAL(nj_file_is_valid(file), NJ_FILE_INVALID_SIZE, "Invalid file");
+  NJ_CHECK_RETURN_VAL(nj_file_is_valid(file), NJ_FILE_INVALID_SIZE);
   struct stat st;
   stat(file->path, &st);
   return st.st_size;

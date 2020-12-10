@@ -47,7 +47,7 @@ void nj_linear_allocator_t<INITIAL_SIZE>::destroy() {
 
 template <njsz INITIAL_SIZE>
 void* nj_linear_allocator_t<INITIAL_SIZE>::aligned_alloc(njsp size, njsp alignment) {
-  NJ_CHECKF_RETURN_VAL(check_aligned_alloc(size, alignment), NULL, "Alignment is not power of 2");
+  NJ_CHECK_LOG_RETURN_VAL(check_aligned_alloc(size, alignment), NULL, "Alignment is not power of 2");
 
   nju8* p = m_top + sizeof(allocation_header_t);
   p = align_forward(p, alignment);
@@ -57,7 +57,7 @@ void* nj_linear_allocator_t<INITIAL_SIZE>::aligned_alloc(njsp size, njsp alignme
     if (new_page_size < m_default_page_size)
       new_page_size = m_default_page_size;
     la_page_t* new_page = (la_page_t*)malloc(new_page_size);
-    NJ_CHECKF_RETURN_VAL(new_page, NULL, "Out of memory for new page for linear allocator \"%s\"", m_name);
+    NJ_CHECK_LOG_RETURN_VAL(new_page, NULL, "Out of memory for new page for linear allocator \"%s\"", m_name);
     new_page->size = new_page_size;
     new_page->prev = m_current_page;
     size += new_page_size;
@@ -81,7 +81,7 @@ void* nj_linear_allocator_t<INITIAL_SIZE>::aligned_alloc(njsp size, njsp alignme
 
 template <njsz INITIAL_SIZE>
 void* nj_linear_allocator_t<INITIAL_SIZE>::realloc(void* p, njsp size) {
-  NJ_CHECKF_RETURN_VAL(check_p_in_dev(p) && size, NULL, "Invalid pointer to realloc");
+  NJ_CHECK_LOG_RETURN_VAL(check_p_in_dev(p) && size, NULL, "Invalid pointer to realloc");
 
   allocation_header_t* header = get_allocation_header(p);
   njsp old_size = header->size;
@@ -107,7 +107,7 @@ void* nj_linear_allocator_t<INITIAL_SIZE>::realloc(void* p, njsp size) {
 
 template <njsz INITIAL_SIZE>
 void nj_linear_allocator_t<INITIAL_SIZE>::free(void* p) {
-  NJ_CHECKF_RETURN(check_p_in_dev(p), "Invalid pointer to free");
+  NJ_CHECK_LOG_RETURN(check_p_in_dev(p), "Invalid pointer to free");
   allocation_header_t* header = get_allocation_header(p);
   if ((nju8*)p + header->size != m_top) {
     return;
