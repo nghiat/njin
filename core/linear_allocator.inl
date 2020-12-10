@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NJ_LINEAR_ALLOCATOR_DEFAULT_PAGE_SIZE 1024 * 1024
+#define NJ_LINEAR_ALLOCATOR_DEFAULT_PAGE_SIZE (1024 * 1024)
 
 struct la_page_t {
   njsp size;
@@ -21,7 +21,9 @@ struct la_page_t {
 
 template <njsz INITIAL_SIZE>
 static njsp get_current_page_remaning_size(const nj_linear_allocator_t<INITIAL_SIZE>* la) {
-  return la->m_current_page->size - (la->m_top - (nju8*)(la->m_current_page));
+  njsp remaining_size = la->m_current_page->size - (la->m_top - (nju8*)(la->m_current_page));
+  NJ_CHECK(remaining_size >= 0);
+  return remaining_size;
 }
 
 template <njsz INITIAL_SIZE>
@@ -53,15 +55,16 @@ void* nj_linear_allocator_t<INITIAL_SIZE>::aligned_alloc(njsp size, njsp alignme
   p = align_forward(p, alignment);
   njsp real_size = (p - m_top) + size;
   if (get_current_page_remaning_size(this) < real_size) {
+    // Create a new page.
     njsp new_page_size = sizeof(la_page_t) + sizeof(allocation_header_t) + size + alignment;
     if (new_page_size < m_default_page_size)
       new_page_size = m_default_page_size;
     la_page_t* new_page = (la_page_t*)malloc(new_page_size);
     NJ_CHECK_LOG_RETURN_VAL(new_page, NULL, "Out of memory for new page for linear allocator \"%s\"", m_name);
+    m_total_size += new_page_size;
+    m_used_size += get_current_page_remaning_size(this) + sizeof(la_page_t);
     new_page->size = new_page_size;
     new_page->prev = m_current_page;
-    size += new_page_size;
-    m_used_size += get_current_page_remaning_size(this);
     m_current_page = new_page;
     m_top = (nju8*)(m_current_page + 1);
     p = align_forward(m_top + sizeof(allocation_header_t), alignment);
