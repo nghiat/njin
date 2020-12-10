@@ -34,7 +34,7 @@ void nj_log_internal(enum nj_log_level level, const char* file, int line, const 
 
   // FILE(LINE) for visual studio click to go to location.
   int log_len = 0;
-  const char* log_prefix_format = "%s(%d): %s ";
+  const char* log_prefix_format = "%s(%d): %s: ";
   const char* level_str = gc_log_level_strings[(int)level];
   int prefix_len = snprintf(NULL, 0, log_prefix_format, file, line, level_str);
   char* log_buffer = (char*)temp_allocator.alloc(log_len + 1);
