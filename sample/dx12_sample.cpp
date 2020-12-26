@@ -131,13 +131,13 @@ struct dx12_window_t : public nj_window_t {
   dx12_descriptor m_shadow_depth_rt_descriptor;
 
   ID3D12RootSignature* m_shadow_root_sig;
-  ID3D12RootSignature* m_rtt_root_sig;
-  ID3DBlob* m_rtt_vs;
-  ID3DBlob* m_rtt_ps;
+  ID3D12RootSignature* m_final_root_sig;
+  ID3DBlob* m_final_vs;
+  ID3DBlob* m_final_ps;
   ID3DBlob* m_shadow_vs;
 
   ID3D12PipelineState* m_shadow_pso;
-  ID3D12PipelineState* m_rtt_pso;
+  ID3D12PipelineState* m_final_pso;
 
   ID3D12Resource* m_vertex_buffer;
   D3D12_VERTEX_BUFFER_VIEW m_vertices_vb_view;
@@ -500,8 +500,8 @@ bool dx12_window_t::init() {
     compile_shader(shader_path, "VSMain", "vs_5_0", &m_shadow_vs);
 
     nj_path_from_exe_dir(NJ_OS_LIT("assets/shader.hlsl"), shader_path, NJ_MAX_PATH);
-    compile_shader(shader_path, "VSMain", "vs_5_0", &m_rtt_vs);
-    compile_shader(shader_path, "PSMain", "ps_5_0", &m_rtt_ps);
+    compile_shader(shader_path, "VSMain", "vs_5_0", &m_final_vs);
+    compile_shader(shader_path, "PSMain", "ps_5_0", &m_final_ps);
   }
 
   {
@@ -566,7 +566,7 @@ bool dx12_window_t::init() {
     DX_CHECK_RETURN_FALSE(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_cmd_allocators[m_frame_no], m_shadow_pso, IID_PPV_ARGS(&m_cmd_list)));
     m_cmd_list->Close();
 
-    D3D12_INPUT_ELEMENT_DESC rtt_elem_descs[] = {
+    D3D12_INPUT_ELEMENT_DESC final_elem_descs[] = {
       { "V", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
       { "N", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
     };
@@ -602,31 +602,31 @@ bool dx12_window_t::init() {
       ID3DBlob* error;
       DX_CHECK_RETURN_FALSE(D3D12SerializeVersionedRootSignature(&root_sig_desc, &signature, &error));
       DX_CHECK_RETURN_FALSE(
-          m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rtt_root_sig)));
+          m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_final_root_sig)));
     }
 
     {
-      D3D12_GRAPHICS_PIPELINE_STATE_DESC rtt_pso_desc = {};
-      rtt_pso_desc.pRootSignature = m_rtt_root_sig;
-      rtt_pso_desc.VS.pShaderBytecode = m_rtt_vs->GetBufferPointer();
-      rtt_pso_desc.VS.BytecodeLength = m_rtt_vs->GetBufferSize();
-      rtt_pso_desc.PS.pShaderBytecode = m_rtt_ps->GetBufferPointer();
-      rtt_pso_desc.PS.BytecodeLength = m_rtt_ps->GetBufferSize();
-      rtt_pso_desc.BlendState = blend_desc;
-      rtt_pso_desc.SampleMask = UINT_MAX;
-      rtt_pso_desc.RasterizerState = rasterizer_desc;
-      rtt_pso_desc.DepthStencilState.DepthEnable = TRUE;
-      rtt_pso_desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-      rtt_pso_desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-      rtt_pso_desc.DepthStencilState.StencilEnable = FALSE;
-      rtt_pso_desc.InputLayout.pInputElementDescs = rtt_elem_descs;
-      rtt_pso_desc.InputLayout.NumElements = (UINT)nj_static_array_size(rtt_elem_descs);
-      rtt_pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-      rtt_pso_desc.NumRenderTargets = 1;
-      rtt_pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-      rtt_pso_desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-      rtt_pso_desc.SampleDesc.Count = 1;
-      DX_CHECK_RETURN_FALSE(m_device->CreateGraphicsPipelineState(&rtt_pso_desc, IID_PPV_ARGS(&m_rtt_pso)));
+      D3D12_GRAPHICS_PIPELINE_STATE_DESC final_pso_desc = {};
+      final_pso_desc.pRootSignature = m_final_root_sig;
+      final_pso_desc.VS.pShaderBytecode = m_final_vs->GetBufferPointer();
+      final_pso_desc.VS.BytecodeLength = m_final_vs->GetBufferSize();
+      final_pso_desc.PS.pShaderBytecode = m_final_ps->GetBufferPointer();
+      final_pso_desc.PS.BytecodeLength = m_final_ps->GetBufferSize();
+      final_pso_desc.BlendState = blend_desc;
+      final_pso_desc.SampleMask = UINT_MAX;
+      final_pso_desc.RasterizerState = rasterizer_desc;
+      final_pso_desc.DepthStencilState.DepthEnable = TRUE;
+      final_pso_desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+      final_pso_desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+      final_pso_desc.DepthStencilState.StencilEnable = FALSE;
+      final_pso_desc.InputLayout.pInputElementDescs = final_elem_descs;
+      final_pso_desc.InputLayout.NumElements = (UINT)nj_static_array_size(final_elem_descs);
+      final_pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+      final_pso_desc.NumRenderTargets = 1;
+      final_pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+      final_pso_desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+      final_pso_desc.SampleDesc.Count = 1;
+      DX_CHECK_RETURN_FALSE(m_device->CreateGraphicsPipelineState(&final_pso_desc, IID_PPV_ARGS(&m_final_pso)));
     }
   }
 
@@ -765,8 +765,8 @@ void dx12_window_t::loop() {
   m_cmd_list->ResourceBarrier(1, &create_transition_barrier(m_shadow_depth_stencil, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ));
   m_cmd_list->ResourceBarrier(1, &create_transition_barrier(m_render_targets[m_frame_no], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-  m_cmd_list->SetPipelineState(m_rtt_pso);
-  m_cmd_list->SetGraphicsRootSignature(m_rtt_root_sig);
+  m_cmd_list->SetPipelineState(m_final_pso);
+  m_cmd_list->SetGraphicsRootSignature(m_final_root_sig);
   m_cmd_list->SetDescriptorHeaps(1, &m_cbv_srv_heap.heap);
   m_cmd_list->SetGraphicsRootDescriptorTable(0, m_shadow_srv_descriptor.gpu_handle);
   m_cmd_list->SetGraphicsRootDescriptorTable(2, m_final_shared_cbv_descriptor.gpu_handle);
