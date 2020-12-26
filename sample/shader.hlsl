@@ -1,7 +1,13 @@
-cbuffer cb : register(b0) {
-    float4x4 mvp;
-    float4x4 light_mvp;
-    float4 cam;
+cbuffer per_obj_cb : register(b0) {
+    float4x4 world;
+};
+
+cbuffer shared_cb : register(b1) {
+    float4x4 view;
+    float4x4 proj;
+    float4x4 light_view;
+    float4x4 light_proj;
+    float4 eye_pos;
     float4 obj_color;
     float4 light_pos;
     float4 light_color;
@@ -16,9 +22,11 @@ struct PSInput {
 
 PSInput VSMain(float4 v: V, float4 n: N) {
     PSInput result;
+    float4x4 mvp = mul(world, mul(view, proj));
     result.p = mul(v, mvp);
     result.v = v;
     result.n = n;
+    float4x4 light_mvp = mul(world, mul(light_view, light_proj));
     result.light_space_p = mul(v, light_mvp);
 
     return result;
@@ -31,9 +39,9 @@ float4 PSMain(PSInput input) : SV_TARGET {
     float3 light_dir = normalize(light_pos - input.v);
     float3 ambient = 0.1 * light_color;
     float3 diffuse = max(dot(input.n.xyz, light_dir), 0.0) * light_color;
-    float3 cam_dir = normalize(cam - input.v);
+    float3 eye_dir = normalize(eye_pos - input.v);
     float3 reflect_dir = reflect(-light_dir, input.n);
-    float spec = pow(max(dot(cam_dir, reflect_dir), 0.0), 32);
+    float spec = pow(max(dot(eye_dir, reflect_dir), 0.0), 32);
     float3 specular = 0.5 * spec * light_color;
     float4 color = float4((ambient + diffuse + specular) * obj_color.xyz, 1.0);
 

@@ -65,7 +65,6 @@ void nj_cam_mouse_move(nj_cam_t* cam, int x, int y) {
     nj_m4_t rotate_hori = nj_quat_to_m4(nj_quat_rotate_v3(cam->up, angle_x));
     nj_m4_t rotate_mat = rotate_hori * rotate_vert;
     cam->forward = nj_v4_normalize(rotate_mat * (nj_v4_t){cam->forward.x, cam->forward.y, cam->forward.z, 1.f});
-    cam->up = nj_v4_normalize(rotate_mat * (nj_v4_t){cam->up.x, cam->up.y, cam->up.z, 1.f});
     cam->view_mat = nj_look_forward_lh(cam->eye, cam->forward, cam->up);
   }
 
@@ -85,7 +84,6 @@ void nj_cam_mouse_move(nj_cam_t* cam, int x, int y) {
     full_backward = backward * cam->dist;
     cam->eye = target + full_backward;
     cam->forward = backward * -1.0f;
-    cam->up = rotate_mat * (nj_v4_t){cam->up.x, cam->up.y, cam->up.z, 1.f};
     cam->view_mat = nj_look_forward_lh(cam->eye, cam->forward, cam->up);
   }
 }

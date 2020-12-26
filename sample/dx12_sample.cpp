@@ -16,10 +16,12 @@
 #include "core/math/float.inl"
 #include "core/math/mat4.inl"
 #include "core/math/transform.inl"
+#include "core/mono_time.h"
 #include "core/path_utils.h"
 #include "core/utils.h"
 #include "core/window/window.h"
 
+#include <math.h>
 #include <wchar.h>
 
 #include <d3d12.h>
@@ -34,14 +36,21 @@
 #pragma clang diagnostic ignored "-Waddress-of-temporary"
 #endif
 
-struct shadow_cb_t {
-  nj_m4_t light_mvp;
+struct per_obj_cb_t {
+  nj_m4_t world;
 };
 
-struct rtt_cb_t {
-  nj_m4_t mvp;
-  nj_m4_t light_mvp;
-  nj_v4_t cam;
+struct shadow_shared_cb_t {
+  nj_m4_t light_view;
+  nj_m4_t light_proj;
+};
+
+struct final_shared_cb_t {
+  nj_m4_t view;
+  nj_m4_t proj;
+  nj_m4_t light_view;
+  nj_m4_t light_proj;
+  nj_v4_t eye_pos;
   nj_v4_t obj_color;
   nj_v4_t light_pos;
   nj_v4_t light_color;
@@ -102,12 +111,18 @@ struct dx12_window_t : public nj_window_t {
   dx12_descriptor_heap m_cbv_srv_heap;
   dx12_buffer m_const_buffer;
   dx12_descriptor m_shadow_srv_descriptor;
-  dx12_descriptor m_rtt_cbv_descriptor;
-  dx12_subbuffer m_rtt_cb_subbuffer;
-  rtt_cb_t m_rtt_cb = {};
-  dx12_descriptor m_shadow_cbv_descriptor;
-  dx12_subbuffer m_shadow_cb_subbuffer;
-  shadow_cb_t m_shadow_cb;
+
+  dx12_descriptor m_per_obj_cbv_descriptors[10];
+  dx12_subbuffer m_per_obj_cb_subbuffers[10];
+  per_obj_cb_t m_per_obj_cbs[10];
+
+  dx12_descriptor m_shadow_shared_cbv_descriptor;
+  dx12_subbuffer m_shadow_shared_cb_subbuffer;
+  shadow_shared_cb_t m_shadow_shared_cb;
+
+  dx12_descriptor m_final_shared_cbv_descriptor;
+  dx12_subbuffer m_final_shared_cb_subbuffer;
+  final_shared_cb_t m_final_shared_cb;
 
   dx12_descriptor_heap m_dsv_heap;
   ID3D12Resource* m_depth_stencil;
@@ -120,7 +135,6 @@ struct dx12_window_t : public nj_window_t {
   ID3DBlob* m_rtt_vs;
   ID3DBlob* m_rtt_ps;
   ID3DBlob* m_shadow_vs;
-  // ID3DBlob* m_shadow_ps;
 
   ID3D12PipelineState* m_shadow_pso;
   ID3D12PipelineState* m_rtt_pso;
@@ -128,13 +142,16 @@ struct dx12_window_t : public nj_window_t {
   ID3D12Resource* m_vertex_buffer;
   D3D12_VERTEX_BUFFER_VIEW m_vertices_vb_view;
   D3D12_VERTEX_BUFFER_VIEW m_normals_vb_view;
-  nju32 m_obj_vertices_num = 0;
+  nju32 m_objs_count = 0;
+  nju32 m_obj_vertices_nums[10] = {};
 
   const nju32 m_normals_stride = 64 * 1024 * 1024;
 
   ID3D12Fence* m_fence;
   HANDLE m_fence_event;
   nju64 m_fence_vals[sc_frame_count] = {};
+
+  njs64 m_start_time;
 };
 
 static bool create_descriptor_heap(dx12_descriptor_heap* descriptor_heap, ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags, nju32 max_descriptors_num) {
@@ -263,22 +280,38 @@ static dx12_subbuffer allocate_const_buffer(dx12_buffer* buffer, njsp size) {
   return subbuffer;
 }
 
+bool compile_shader(const nj_os_char* path, const char* entry, const char* target, ID3DBlob** shader) {
+  UINT compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+  ID3DBlob* error;
+  if (D3DCompileFromFile(path, NULL, NULL, entry, target, compile_flags, 0, shader, &error) != S_OK) {
+    NJ_LOGF("%s", (const char*)error->GetBufferPointer());
+    return false;
+  }
+  return true;
+}
+
 bool dx12_window_t::init() {
   nj_window_t::init();
 
+  m_start_time = nj_mono_time_now();
   nj_cam_init(&m_cam, {5.0f, 5.0f, 5.0f}, {0.0f, 0.0f, 0.0f}, this);
-  m_rtt_cb.cam = nj_v3_to_v4(m_cam.eye, 1.0f);
-  m_rtt_cb.obj_color = {1.0f, 0.0f, 0.0f, 1.0f};
-  m_rtt_cb.light_pos = {10.0f, 10.0f, 10.0f, 1.0f};
-  m_rtt_cb.light_color = {1.0f, 1.0f, 1.0f, 1.0f};
+  m_final_shared_cb.eye_pos = nj_v3_to_v4(m_cam.eye, 1.0f);
+  m_final_shared_cb.obj_color = {1.0f, 0.0f, 0.0f, 1.0f};
+  m_final_shared_cb.light_pos = {10.0f, 10.0f, 10.0f, 1.0f};
+  m_final_shared_cb.light_color = {1.0f, 1.0f, 1.0f, 1.0f};
 
   // The light is static for now.
   nj_cam_t light_cam;
-  nj_cam_init(&light_cam, {5.0f, 5.0f, 5.0f}, {0.0f, 0.0f, 0.0f}, this);
+  nj_cam_init(&light_cam, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, this);
   // TODO: ortho?
   nj_m4_t perspective = nj_perspective(nj_degree_to_rad(75), m_width * 1.0f / m_height, 0.01f, 100.0f);
-  m_shadow_cb.light_mvp = perspective * light_cam.view_mat;
-  m_rtt_cb.light_mvp = perspective * light_cam.view_mat;
+
+  m_shadow_shared_cb.light_view = light_cam.view_mat;
+  m_shadow_shared_cb.light_proj = perspective;
+
+  m_final_shared_cb.proj = perspective;
+  m_final_shared_cb.light_view = light_cam.view_mat;
+  m_final_shared_cb.light_proj = perspective;
 
   UINT dxgi_factory_flags = 0;
   {
@@ -399,8 +432,8 @@ bool dx12_window_t::init() {
 
   {
     // 1 srv for shadow rt
-    // 2 cbv
-    if(!create_descriptor_heap(&m_cbv_srv_heap, m_device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, 3))
+    // 3 cbv
+    if(!create_descriptor_heap(&m_cbv_srv_heap, m_device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, 10))
       return false;
 
     m_shadow_srv_descriptor = allocate_descriptor(&m_cbv_srv_heap);
@@ -421,42 +454,54 @@ bool dx12_window_t::init() {
       return false;
     // From D3D12HelloConstantBuffers sample
     // CB size is required to be 256-byte aligned
-    m_rtt_cbv_descriptor = allocate_descriptor(&m_cbv_srv_heap);
-    njsp cb_size = (sizeof(rtt_cb_t) + 255) & ~255;
-    m_rtt_cb_subbuffer = allocate_const_buffer(&m_const_buffer, cb_size);
-    m_device->CreateConstantBufferView(&create_const_buf_view_desc(m_rtt_cb_subbuffer.gpu_p, m_rtt_cb_subbuffer.size), m_rtt_cbv_descriptor.cpu_handle);
+    {
+      m_shadow_shared_cbv_descriptor = allocate_descriptor(&m_cbv_srv_heap);
+      njsp cb_size = (sizeof(shadow_shared_cb_t) + 255) & ~255;
+      m_shadow_shared_cb_subbuffer = allocate_const_buffer(&m_const_buffer, cb_size);
+      m_device->CreateConstantBufferView(&create_const_buf_view_desc(m_shadow_shared_cb_subbuffer.gpu_p, m_shadow_shared_cb_subbuffer.size), m_shadow_shared_cbv_descriptor.cpu_handle);
+      memcpy(m_shadow_shared_cb_subbuffer.cpu_p, &m_shadow_shared_cb, sizeof(m_shadow_shared_cb));
+    }
 
-    m_shadow_cbv_descriptor = allocate_descriptor(&m_cbv_srv_heap);
-    cb_size = (sizeof(shadow_cb_t) + 255) & ~255;
-    m_shadow_cb_subbuffer = allocate_const_buffer(&m_const_buffer, cb_size);
-    m_device->CreateConstantBufferView(&create_const_buf_view_desc(m_shadow_cb_subbuffer.gpu_p, m_shadow_cb_subbuffer.size), m_shadow_cbv_descriptor.cpu_handle);
+    {
+      m_final_shared_cbv_descriptor = allocate_descriptor(&m_cbv_srv_heap);
+      njsp cb_size = (sizeof(final_shared_cb_t) + 255) & ~255;
+      m_final_shared_cb_subbuffer = allocate_const_buffer(&m_const_buffer, cb_size);
+      m_device->CreateConstantBufferView(&create_const_buf_view_desc(m_final_shared_cb_subbuffer.gpu_p, m_final_shared_cb_subbuffer.size), m_final_shared_cbv_descriptor.cpu_handle);
+    }
   }
 
   {
     // Create a root signature consisting of a descriptor table with a single CBV
-    D3D12_DESCRIPTOR_RANGE1 ranges = create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0);
-    D3D12_ROOT_PARAMETER1 root_params = create_root_param_1_1_descriptor_table(1, &ranges, D3D12_SHADER_VISIBILITY_ALL);
+    D3D12_DESCRIPTOR_RANGE1 ranges[] = {
+      create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0),
+      create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1, 0),
+    };
+    D3D12_ROOT_PARAMETER1 root_params[] = {
+      create_root_param_1_1_descriptor_table(1, &ranges[0], D3D12_SHADER_VISIBILITY_VERTEX),
+      create_root_param_1_1_descriptor_table(1, &ranges[1], D3D12_SHADER_VISIBILITY_VERTEX),
+    };
     D3D12_VERSIONED_ROOT_SIGNATURE_DESC root_sig_desc = create_root_sig_desc_1_1(
-        1,
-        &root_params,
+        nj_static_array_size(root_params),
+        root_params,
         0,
         NULL,
         D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-            D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
+            D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+            D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS);
     ID3DBlob* signature;
     ID3DBlob* error;
     DX_CHECK_RETURN_FALSE(D3D12SerializeVersionedRootSignature(&root_sig_desc, &signature, &error));
     DX_CHECK_RETURN_FALSE(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_shadow_root_sig)));
+  }
 
-    UINT compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+  {
     nj_os_char shader_path[NJ_MAX_PATH];
     nj_path_from_exe_dir(NJ_OS_LIT("assets/shadow.hlsl"), shader_path, NJ_MAX_PATH);
-    DX_CHECK_RETURN_FALSE(D3DCompileFromFile(shader_path, NULL, NULL, "VSMain", "vs_5_0", compile_flags, 0, &m_shadow_vs, NULL));
-    // DX_CHECK_RETURN_FALSE(D3DCompileFromFile(shader_path, NULL, NULL, "PSMain", "ps_5_0", compile_flags, 0, &m_shadow_ps, NULL));
+    compile_shader(shader_path, "VSMain", "vs_5_0", &m_shadow_vs);
 
     nj_path_from_exe_dir(NJ_OS_LIT("assets/shader.hlsl"), shader_path, NJ_MAX_PATH);
-    DX_CHECK_RETURN_FALSE(D3DCompileFromFile(shader_path, NULL, NULL, "VSMain", "vs_5_0", compile_flags, 0, &m_rtt_vs, NULL));
-    DX_CHECK_RETURN_FALSE(D3DCompileFromFile(shader_path, NULL, NULL, "PSMain", "ps_5_0", compile_flags, 0, &m_rtt_ps, NULL));
+    compile_shader(shader_path, "VSMain", "vs_5_0", &m_rtt_vs);
+    compile_shader(shader_path, "PSMain", "ps_5_0", &m_rtt_ps);
   }
 
   {
@@ -530,10 +575,12 @@ bool dx12_window_t::init() {
       D3D12_DESCRIPTOR_RANGE1 ranges[] = {
         create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE),
         create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0),
+        create_descriptor_range_1_1(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1, 0),
       };
       D3D12_ROOT_PARAMETER1 root_params[] = {
           create_root_param_1_1_descriptor_table(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL),
           create_root_param_1_1_descriptor_table(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL),
+          create_root_param_1_1_descriptor_table(1, &ranges[2], D3D12_SHADER_VISIBILITY_ALL),
       };
       D3D12_STATIC_SAMPLER_DESC sampler = {};
       sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
@@ -604,21 +651,32 @@ bool dx12_window_t::init() {
     temp_allocator.init();
     const nj_os_char* obj_paths[] = {
         NJ_OS_LIT("assets/plane.obj"),
-        NJ_OS_LIT("assets/cube.obj"),
+        NJ_OS_LIT("assets/wolf.obj"),
     };
     nju8* vertex_buffer_begin;
     njsp vertices_offset = 0;
     njsp normals_offset = 0;
     DX_CHECK_RETURN_FALSE(m_vertex_buffer->Map(0, &D3D12_RANGE{0, 0}, (void**)&vertex_buffer_begin));
-    int obj_count = nj_static_array_size(obj_paths);
-    for (int i = 0; i < obj_count; ++i) {
+    m_objs_count = nj_static_array_size(obj_paths);
+
+    {
+      njsp cb_size = (sizeof(per_obj_cb_t) + 255) & ~255;
+      for (int i = 0; i < m_objs_count; ++i) {
+        m_per_obj_cb_subbuffers[i] = allocate_const_buffer(&m_const_buffer, cb_size);
+        m_per_obj_cbv_descriptors[i] = allocate_descriptor(&m_cbv_srv_heap);
+        m_device->CreateConstantBufferView(&create_const_buf_view_desc(m_per_obj_cb_subbuffers[i].gpu_p, cb_size), m_per_obj_cbv_descriptors[i].cpu_handle);
+        m_per_obj_cbs[i].world = nj_m4_identity();
+        memcpy(m_per_obj_cb_subbuffers[i].cpu_p, &m_per_obj_cbs[i], sizeof(per_obj_cb_t));
+      }
+    }
+
+    for (int i = 0; i < m_objs_count; ++i) {
       nj_obj_t obj;
       nj_os_char full_obj_path[NJ_MAX_PATH];
       nj_obj_init(&obj, &temp_allocator, nj_path_from_exe_dir(obj_paths[i], full_obj_path, NJ_MAX_PATH));
-      int obj_len = nj_da_len(&obj.vertices);
-      int vertices_size = obj_len * sizeof(obj.vertices[0]);
-      int normals_size = obj_len * sizeof(obj.normals[0]);
-      m_obj_vertices_num += obj_len;
+      m_obj_vertices_nums[i] = nj_da_len(&obj.vertices);
+      int vertices_size = m_obj_vertices_nums[i] * sizeof(obj.vertices[0]);
+      int normals_size = m_obj_vertices_nums[i] * sizeof(obj.normals[0]);
       memcpy(vertex_buffer_begin + vertices_offset, &obj.vertices[0], vertices_size);
       memcpy(vertex_buffer_begin + m_normals_stride + normals_offset, &obj.normals[0], normals_size);
       vertices_offset += vertices_size;
@@ -655,13 +713,21 @@ void dx12_window_t::destroy() {
 }
 
 void dx12_window_t::loop() {
-  memcpy(m_shadow_cb_subbuffer.cpu_p, &m_shadow_cb, sizeof(m_shadow_cb));
-
   nj_cam_update(&m_cam);
-  nj_m4_t perspective = nj_perspective(nj_degree_to_rad(75), m_width * 1.0f / m_height, 0.01f, 100.0f);
-  m_rtt_cb.mvp = perspective * m_cam.view_mat;
-  memcpy(m_rtt_cb_subbuffer.cpu_p, &m_rtt_cb, sizeof(m_rtt_cb));
+  m_final_shared_cb.view = m_cam.view_mat;
+  memcpy(m_final_shared_cb_subbuffer.cpu_p, &m_final_shared_cb, sizeof(m_final_shared_cb));
 
+  njf64 delta_s = nj_mono_time_to_s(nj_mono_time_now() - m_start_time);
+  njf64 loop_s = 4.0;
+  njf64 mod = fmod(delta_s, loop_s);
+  njf64 norm_mod = mod / loop_s;
+  if (norm_mod > 0.5)
+    norm_mod = 1.0 - norm_mod;
+  njf32 from_y = -0.5f;
+  njf32 to_y = 0.5f;
+  njf32 y = (to_y - from_y) * norm_mod * 2 + from_y;
+  m_per_obj_cbs[1].world = nj_translate({0.0f, y, 0.0f});
+  memcpy(m_per_obj_cb_subbuffers[1].cpu_p, &m_per_obj_cbs[1], sizeof(per_obj_cb_t));
   DX_CHECK_RETURN(m_cmd_allocators[m_frame_no]->Reset());
   DX_CHECK_RETURN(m_cmd_list->Reset(m_cmd_allocators[m_frame_no], m_shadow_pso));
 
@@ -686,12 +752,15 @@ void dx12_window_t::loop() {
   m_cmd_list->SetPipelineState(m_shadow_pso);
   m_cmd_list->SetGraphicsRootSignature(m_shadow_root_sig);
   m_cmd_list->SetDescriptorHeaps(1, &m_cbv_srv_heap.heap);
-  m_cmd_list->SetGraphicsRootDescriptorTable(0, m_shadow_cbv_descriptor.gpu_handle);
+  m_cmd_list->SetGraphicsRootDescriptorTable(1, m_shadow_shared_cbv_descriptor.gpu_handle);
   m_cmd_list->OMSetRenderTargets(0, NULL, FALSE, &m_shadow_depth_rt_descriptor.cpu_handle);
   m_cmd_list->ClearDepthStencilView(m_shadow_depth_rt_descriptor.cpu_handle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, NULL);
   m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   m_cmd_list->IASetVertexBuffers(0, 1, &m_vertices_vb_view);
-  m_cmd_list->DrawInstanced(m_obj_vertices_num, 1, 0, 0);
+  m_cmd_list->SetGraphicsRootDescriptorTable(0, m_per_obj_cbv_descriptors[0].gpu_handle);
+  m_cmd_list->DrawInstanced(m_obj_vertices_nums[0], 1, 0, 0);
+  m_cmd_list->SetGraphicsRootDescriptorTable(0, m_per_obj_cbv_descriptors[1].gpu_handle);
+  m_cmd_list->DrawInstanced(m_obj_vertices_nums[1], 1, m_obj_vertices_nums[0], 0);
 
   m_cmd_list->ResourceBarrier(1, &create_transition_barrier(m_shadow_depth_stencil, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ));
   m_cmd_list->ResourceBarrier(1, &create_transition_barrier(m_render_targets[m_frame_no], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
@@ -700,7 +769,7 @@ void dx12_window_t::loop() {
   m_cmd_list->SetGraphicsRootSignature(m_rtt_root_sig);
   m_cmd_list->SetDescriptorHeaps(1, &m_cbv_srv_heap.heap);
   m_cmd_list->SetGraphicsRootDescriptorTable(0, m_shadow_srv_descriptor.gpu_handle);
-  m_cmd_list->SetGraphicsRootDescriptorTable(1, m_rtt_cbv_descriptor.gpu_handle);
+  m_cmd_list->SetGraphicsRootDescriptorTable(2, m_final_shared_cbv_descriptor.gpu_handle);
   m_cmd_list->OMSetRenderTargets(1, &m_rtv_descriptors[m_frame_no].cpu_handle, FALSE, &m_depth_rt_descriptor.cpu_handle);
   float clear_color[] = {1.0f, 1.0f, 1.0f, 1.0f};
   m_cmd_list->ClearRenderTargetView(m_rtv_descriptors[m_frame_no].cpu_handle, clear_color, 0, NULL);
@@ -708,7 +777,11 @@ void dx12_window_t::loop() {
   m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   m_cmd_list->IASetVertexBuffers(0, 1, &m_vertices_vb_view);
   m_cmd_list->IASetVertexBuffers(1, 1, &m_normals_vb_view);
-  m_cmd_list->DrawInstanced(m_obj_vertices_num, 1, 0, 0);
+  m_cmd_list->SetGraphicsRootDescriptorTable(1, m_per_obj_cbv_descriptors[0].gpu_handle);
+  m_cmd_list->DrawInstanced(m_obj_vertices_nums[0], 1, 0, 0);
+  m_cmd_list->SetGraphicsRootDescriptorTable(1, m_per_obj_cbv_descriptors[1].gpu_handle);
+  m_cmd_list->DrawInstanced(m_obj_vertices_nums[1], 1, m_obj_vertices_nums[0], 0);
+
   m_cmd_list->ResourceBarrier(1, &create_transition_barrier(m_render_targets[m_frame_no], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
   m_cmd_list->Close();
