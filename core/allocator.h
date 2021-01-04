@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------//
 // This file is distributed under the MIT License.                            //
 // See LICENSE.txt for details.                                               //
-// Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2020             //
+// Copyright (C) Tran Tuan Nghia <trantuannghia95@gmail.com> 2021             //
 //----------------------------------------------------------------------------//
 
 #ifndef CORE_ALLOCATOR_H
@@ -17,6 +17,7 @@ struct nj_allocator_t {
   virtual void free(void* p) = 0;
 
   void* alloc(njsp size);
+  void* alloc_zero(njsp size);
 
   const char* m_name = nullptr;
   /// Total size of the allocator in bytes.
@@ -24,10 +25,5 @@ struct nj_allocator_t {
   /// Allocations' sizes and supporting data of the allocator in bytes.
   njsp m_used_size = 0;
 };
-
-inline
-void* nj_allocator_t::alloc(njsp size) {
-  return aligned_alloc(size, 16);
-}
 
 #endif // CORE_ALLOCATOR_H

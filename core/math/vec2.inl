@@ -19,6 +19,14 @@ inline nj_v2_t operator-(const nj_v2_t& v1, const nj_v2_t& v2) {
   return {v1.x - v2.x, v1.y - v2.y};
 }
 
+inline nj_v2_t operator*(const nj_v2_t& v1, const nj_v2_t& v2) {
+  return {v1.x * v2.x, v1.y * v2.y};
+}
+
+inline nj_v2_t operator/(const nj_v2_t& v1, const nj_v2_t& v2) {
+  return {v1.x / v2.x, v1.y / v2.y};
+}
+
 inline nj_v2_t operator*(const nj_v2_t& v, njf32 f) {
   return {v.x * f, v.y * f};
 }
@@ -34,6 +42,16 @@ inline nj_v2_t& operator+=(nj_v2_t& v1, const nj_v2_t& v2) {
 
 inline nj_v2_t& operator-=(nj_v2_t& v1, const nj_v2_t& v2) {
   v1 = v1 - v2;
+  return v1;
+}
+
+inline nj_v2_t& operator*=(nj_v2_t& v1, const nj_v2_t& v2) {
+  v1 = v1 * v2;
+  return v1;
+}
+
+inline nj_v2_t& operator/=(nj_v2_t& v1, const nj_v2_t& v2) {
+  v1 = v1 / v2;
   return v1;
 }
 
@@ -53,7 +71,7 @@ inline njf32 nj_v2_dot(const nj_v2_t& v1, const nj_v2_t& v2) {
 
 inline nj_v2_t nj_v2_normalize(const nj_v2_t& v) {
   njf32 len = sqrt(v.x * v.x + v.x * v.x);
-  return vec2_div(v, len);
+  return v / len;
 }
 
 #endif // NJ_CORE_MATH_VEC2_INL

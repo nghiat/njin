@@ -21,11 +21,17 @@ struct nj_v2_t {
 
 nj_v2_t operator+(const nj_v2_t& v1, const nj_v2_t& v2);
 nj_v2_t operator-(const nj_v2_t& v1, const nj_v2_t& v2);
+nj_v2_t operator*(const nj_v2_t& v1, const nj_v2_t& v2);
+nj_v2_t operator/(const nj_v2_t& v1, const nj_v2_t& v2);
+
 nj_v2_t operator*(const nj_v2_t& v, njf32 f);
 nj_v2_t operator/(const nj_v2_t& v, njf32 f);
 
 nj_v2_t& operator+=(nj_v2_t& v1, const nj_v2_t& v2);
 nj_v2_t& operator-=(nj_v2_t& v1, const nj_v2_t& v2);
+nj_v2_t& operator*=(nj_v2_t& v1, const nj_v2_t& v2);
+nj_v2_t& operator/=(nj_v2_t& v1, const nj_v2_t& v2);
+
 nj_v2_t& operator*=(nj_v2_t& v, njf32 f);
 nj_v2_t& operator/=(nj_v2_t& v, njf32 f);
 

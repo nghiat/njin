@@ -32,8 +32,8 @@ PSInput VSMain(float4 v: V, float4 n: N) {
     return result;
 }
 
-Texture2D g_texture : register(t0);
-SamplerState g_sampler : register(s0);
+Texture2D g_shadow_texture : register(t0);
+SamplerState g_shadow_sampler : register(s0);
 
 float4 PSMain(PSInput input) : SV_TARGET {
     float3 light_dir = normalize(light_pos - input.v);
@@ -51,9 +51,9 @@ float4 PSMain(PSInput input) : SV_TARGET {
     shadow_uv.x = (input.light_space_p.x + 1.0) / 2.0;
     shadow_uv.y = 1.0 - (input.light_space_p.y + 1.0) / 2.0;
     if ((saturate(shadow_uv.x) == shadow_uv.x) && (saturate(shadow_uv.y) == shadow_uv.y) && (input.light_space_p.z > 0)) {
-      float sample = g_texture.Sample(g_sampler, shadow_uv);
+      float sample = g_shadow_texture.Sample(g_shadow_sampler, shadow_uv);
       if (input.light_space_p.z > sample + 0.0005)
-        return float4(0.0f, 0.0f, 0.0f, 0.0f);
+        return float4(0.0f, 0.0f, 0.0f, 1.0f);
     }
     return color;
 }
