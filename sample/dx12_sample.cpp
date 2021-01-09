@@ -106,6 +106,7 @@ struct dx12_subbuffer {
   dx12_buffer* buffer = NULL;
   nju8* cpu_p = NULL;
   D3D12_GPU_VIRTUAL_ADDRESS gpu_p = 0;
+  njsp offset = 0;
   njsp size = 0;
 };
 
@@ -174,7 +175,10 @@ struct dx12_window_t : public nj_window_t {
   ID3D12PipelineState* m_final_pso;
   ID3D12PipelineState* m_ui_pso;
 
-  ID3D12Resource* m_vertex_buffer;
+  dx12_buffer m_vertex_buffer;
+  dx12_subbuffer m_vertices_subbuffer;
+  dx12_subbuffer m_normals_subbuffer;
+  dx12_subbuffer m_text_subbuffer;
   D3D12_VERTEX_BUFFER_VIEW m_vertices_vb_view;
   D3D12_VERTEX_BUFFER_VIEW m_normals_vb_view;
   D3D12_VERTEX_BUFFER_VIEW m_ui_vb_view;
@@ -316,6 +320,7 @@ static dx12_subbuffer allocate_subbuffer(dx12_buffer* buffer, njsp size, njsp al
   subbuffer.buffer = buffer;
   subbuffer.cpu_p = (nju8*)buffer->cpu_p + aligned_offset;
   subbuffer.gpu_p = buffer->buffer->GetGPUVirtualAddress() + aligned_offset;
+  subbuffer.offset = aligned_offset;
   subbuffer.size = size;
   buffer->offset = aligned_offset + size;
   return subbuffer;
@@ -747,22 +752,6 @@ bool dx12_window_t::init() {
   }
 
   {
-    D3D12_RESOURCE_DESC res_desc = {};
-    res_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    res_desc.Alignment = 0;
-    res_desc.Width = 128 * 1024 * 1024;
-    res_desc.Height = 1;
-    res_desc.DepthOrArraySize = 1;
-    res_desc.MipLevels = 1;
-    res_desc.Format = DXGI_FORMAT_UNKNOWN;
-    res_desc.SampleDesc.Count = 1;
-    res_desc.SampleDesc.Quality = 0;
-    res_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-    res_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-    DX_CHECK_RETURN_FALSE(m_device->CreateCommittedResource(&create_heap_props(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE, &res_desc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&m_vertex_buffer)));
-  }
-
-  {
     stbtt_fontinfo font;
     nj_os_char font_path[NJ_MAX_PATH];
     nj_path_from_exe_dir(NJ_OS_LIT("assets/UbuntuMono-Regular.ttf"), font_path, NJ_MAX_PATH);
@@ -877,10 +866,8 @@ bool dx12_window_t::init() {
         NJ_OS_LIT("assets/plane.obj"),
         NJ_OS_LIT("assets/wolf.obj"),
     };
-    nju8* vertex_buffer_begin;
     njsp vertices_offset = 0;
     njsp normals_offset = 0;
-    DX_CHECK_RETURN_FALSE(m_vertex_buffer->Map(0, &D3D12_RANGE{0, 0}, (void**)&vertex_buffer_begin));
     m_objs_count = nj_static_array_size(obj_paths);
 
     {
@@ -894,6 +881,12 @@ bool dx12_window_t::init() {
       }
     }
 
+    if (!create_buffer(&m_vertex_buffer, m_device, &create_heap_props(D3D12_HEAP_TYPE_UPLOAD), &create_resource_desc(128 * 1024 * 1024)))
+      return false;
+
+    m_vertices_subbuffer = allocate_subbuffer(&m_vertex_buffer, 16 * 1024 * 1024, 16);
+    m_normals_subbuffer = allocate_subbuffer(&m_vertex_buffer, 16 * 1024 * 1024, 16);
+    m_text_subbuffer = allocate_subbuffer(&m_vertex_buffer, 1024 * 1024, 16);
     for (int i = 0; i < m_objs_count; ++i) {
       nj_obj_t obj;
       nj_os_char full_obj_path[NJ_MAX_PATH];
@@ -901,24 +894,60 @@ bool dx12_window_t::init() {
       m_obj_vertices_nums[i] = nj_da_len(&obj.vertices);
       int vertices_size = m_obj_vertices_nums[i] * sizeof(obj.vertices[0]);
       int normals_size = m_obj_vertices_nums[i] * sizeof(obj.normals[0]);
-      memcpy(vertex_buffer_begin + vertices_offset, &obj.vertices[0], vertices_size);
-      memcpy(vertex_buffer_begin + m_normals_stride + normals_offset, &obj.normals[0], normals_size);
+      NJ_CHECK_RETURN_VAL(vertices_offset + vertices_size <= m_vertices_subbuffer.size, false);
+      NJ_CHECK_RETURN_VAL(normals_offset + normals_size <= m_normals_subbuffer.size, false);
+      memcpy(m_vertices_subbuffer.cpu_p + vertices_offset, &obj.vertices[0], vertices_size);
+      memcpy(m_normals_subbuffer.cpu_p + normals_offset, &obj.normals[0], normals_size);
       vertices_offset += vertices_size;
       normals_offset += normals_size;
     }
-    m_vertices_vb_view.BufferLocation = m_vertex_buffer->GetGPUVirtualAddress();
+    m_vertices_vb_view.BufferLocation = m_vertices_subbuffer.gpu_p;
     m_vertices_vb_view.SizeInBytes = vertices_offset;
     m_vertices_vb_view.StrideInBytes = sizeof(((nj_obj_t*)0)->vertices[0]);
 
-    m_normals_vb_view.BufferLocation = m_vertex_buffer->GetGPUVirtualAddress() + m_normals_stride;
+    m_normals_vb_view.BufferLocation = m_normals_subbuffer.gpu_p;
     m_normals_vb_view.SizeInBytes = normals_offset;
     m_normals_vb_view.StrideInBytes = sizeof(((nj_obj_t*)0)->normals[0]);
 
+    m_vertex_buffer.buffer->Unmap(0, NULL);
+  }
+
+  {
+    DX_CHECK_RETURN_FALSE(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
+    ++m_fence_vals[m_frame_no];
+    m_fence_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+    NJ_CHECK_RETURN_VAL(m_fence_event, false);
+    wait_for_gpu();
+  }
+
+  return true;
+}
+
+void dx12_window_t::destroy() {
+  if (m_device)
+    m_device->Release();
+  if (m_cmd_queue)
+    m_cmd_queue->Release();
+}
+
+void dx12_window_t::loop() {
+  {
+    nj_scoped_la_allocator_t<> temp_allocator("text_allocator");
+    temp_allocator.init();
+    m_vertex_buffer.buffer->Map(0, NULL, &m_vertex_buffer.cpu_p);
     // text data
-    const char* text = "Apparently we had reached a great height in the atmosphere, for the sky was a dead black, and the stars had ceased to "
-                       "twinkle. By the same illusion which lifts the horizon of the sea to the level of the spectator on a hillside, the sable "
-                       "cloud beneath was dished out, and the car seemed to float in the middle of an immense dark sphere, whose upper half was "
-                       "strewn with silver. Looking down into the dark gulf below, I could see a ruddy light streaming through a rift in the clouds. aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    static njs64 last_frametime = nj_mono_time_now();
+    njs64 now = nj_mono_time_now();
+    char text[256];
+    njf64 frametime = nj_mono_time_to_ms(now - last_frametime);
+    float fps = (int)(1000.0 / frametime);
+    int i_fps;
+    if (fps - (int)fps > 0.5)
+      i_fps = (int)fps + 1;
+    else
+      i_fps = (int)fps;
+    snprintf(text, 256, "Frametime: %.2fms\nFPS: %d", frametime, i_fps);
+    last_frametime = now;
     nj_dynamic_array_t<float> ui_data;
     nj_da_init(&ui_data, &temp_allocator);
     const float c_x_left = 10.0f;
@@ -930,6 +959,11 @@ bool dx12_window_t::init() {
     float scale = g_font.scale;
     for (int i = 0; i < m_text_len; ++i) {
       const char* c = &text[i];
+      if (*c == '\n') {
+        y += g_font.line_space;
+        x= c_x_left;
+        continue;
+      }
       const char* nc = &text[i + 1];
       codepoint_t* cp = &g_font.codepoints[*c];
       float left = x + cp->x0;
@@ -989,33 +1023,13 @@ bool dx12_window_t::init() {
       }
     }
 
-    memcpy(vertex_buffer_begin + vertices_offset, ui_data.p, nj_da_len(&ui_data) * sizeof(float));
-    m_ui_vb_view.BufferLocation = m_vertex_buffer->GetGPUVirtualAddress() + vertices_offset;
+    memcpy((nju8*)m_vertex_buffer.cpu_p + m_text_subbuffer.offset, ui_data.p, nj_da_len(&ui_data) * sizeof(float));
+    m_ui_vb_view.BufferLocation = m_vertex_buffer.buffer->GetGPUVirtualAddress() + m_text_subbuffer.offset;
     m_ui_vb_view.SizeInBytes = nj_da_len(&ui_data) * sizeof(float);
     m_ui_vb_view.StrideInBytes = 4 * sizeof(float);
-
-    m_vertex_buffer->Unmap(0, NULL);
+    m_vertex_buffer.buffer->Unmap(0, NULL);
   }
 
-  {
-    DX_CHECK_RETURN_FALSE(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
-    ++m_fence_vals[m_frame_no];
-    m_fence_event = CreateEvent(NULL, FALSE, FALSE, NULL);
-    NJ_CHECK_RETURN_VAL(m_fence_event, false);
-    wait_for_gpu();
-  }
-
-  return true;
-}
-
-void dx12_window_t::destroy() {
-  if (m_device)
-    m_device->Release();
-  if (m_cmd_queue)
-    m_cmd_queue->Release();
-}
-
-void dx12_window_t::loop() {
   nj_cam_update(&m_cam);
   m_final_shared_cb.view = m_cam.view_mat;
   memcpy(m_final_shared_cb_subbuffer.cpu_p, &m_final_shared_cb, sizeof(m_final_shared_cb));
