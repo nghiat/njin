@@ -1,4 +1,6 @@
-*.pyc
-tags
 .vscode/
 out/
+
+*.pyc
+.lvimrc
+tags

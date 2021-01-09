@@ -17,6 +17,7 @@ executable("dx12_sample") {
 
   deps = [
     ":dx12_shader",
+    "//assets",
     "//core",
   ]
 
@@ -29,16 +30,10 @@ executable("dx12_sample") {
 
 copy("dx12_shader") {
   sources = [
-    "cube.obj",
-    "plane.obj",
-    "wolf.obj",
-
     "rtt.hlsl",
     "shader.hlsl",
     "shadow.hlsl",
     "ui.hlsl",
-
-    "UbuntuMono-Regular.ttf",
   ]
 
   outputs = [

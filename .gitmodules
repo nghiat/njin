@@ -1,3 +1,6 @@
 [submodule "third_party/stb"]
 	path = third_party/stb
 	url = https://github.com/nghiat/stb
+[submodule "assets"]
+	path = assets
+	url = https://github.com/nghiat/njin_assets
